@@ -80,6 +80,10 @@ Each tier is a preset bundle of the same eight knobs. Users can also set knobs i
 - E2B/Daytona/Modal: per-second resource pricing, independent CPU/RAM/disk config
 - NallPuter requirements.md: Resource model table, "Bigger NallPuter" concept
 
+## Addendum — 2026-09-07 (Decisions 003/004)
+
+The 8 knobs remain the scaling mechanism (“Bigger NallPuter” = bump knobs, no new product), but they are now **fields of `MachineProfile.resources`** (Decision 003), not the profile itself. The Docker/Render mapping table is the **Lab Rat #1 implementation** of those fields; the canonical persistence backing is `external_canonical` (Decision 004) and the Render Disk is accessed only via the sync-engine abstraction (not as “the computer is the disk”). `Disk` vs `Workspace` quota is enforced at sync time (`507 workspace_quota_exceeded`) as well as at write time. `Network` remains policy-contract-only here; enforcement choice (sidecar vs iptables vs userspace) is Phase 4.
+
 ## Review gate outcome
 
-Synchronous review completed. Decision locked. Proceed to Phase 3 (API contract).
+Synchronous review completed. Decision locked 2026-09-06; addendum locked 2026-09-07. Proceed to Phase 2a/2b (Machine Contract + Persistent State) → Phase 3 (Machine & Execution API Contract).

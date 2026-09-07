@@ -79,6 +79,14 @@ creating → running → idle → stopping → stopped → starting → running
 - E2B/Daytona/Modal: pause/resume as distinct from stop/start, snapshots ≠ workspace persistence
 - NallPuter requirements.md: Pillar 1 (Isolation), Pillar 2 (Lifecycle), Pillar 3 (Workspace)
 
+## Addendum — 2026-09-07 (Decisions 003/004)
+
+**Render is Lab Rat #1, not architecture.** The sentence “Linux container with persistent workspace volume, running as a private Render service” is now interpreted as:
+
+> *One implementation of the Machine Contract where `persistence.instance=ephemeral`, `persistence.workspace=external_canonical`, `restart_behavior=instance_recreated` (Decision 003), backed by an external canonical store via a debounced+flush+restore sync engine (Decision 004).*
+
+The container/VM remains a single computer (not per-request), but the *volume* is no longer “the computer.” The runtime is disposable; the canonical external store is what `computer_id` survives on. `stopped` means compute released while canonical store is retained; `destroyed` deletes the canonical prefix. Package persistence is `reconstructible` via `environment.yaml/lock` replay, not raw filesystem copy (004 § Environment). API stability now includes `GET /v1/machine` and `GET /v1/health` as preconditions to any exec (003).
+
 ## Review gate outcome
 
-Synchronous review completed. Decision locked. Proceed to 002-resource-model.md.
+Synchronous review completed. Decision locked 2026-09-06; addendum locked 2026-09-07. Proceed to 002-resource-model.md.

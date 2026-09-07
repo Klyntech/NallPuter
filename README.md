@@ -25,15 +25,17 @@ NallPuter (computer)
 |-------|-------------|--------|
 | 0 | Mission lock | ✅ |
 | 1 | Prior-art research (6 docs + synthesis) | ✅ `docs/research/` |
-| 2 | Computer model + Resource model decisions | ✅ `docs/decisions/` |
-| 3 | API contract + OpenAPI | ⬜ |
-| 4 | Workspace model | ⬜ |
-| 5 | Security model | ⬜ |
-| 6 | Lifecycle model | ⬜ |
-| 7 | NALLY integration | ⬜ |
-| 8 | MVP v0.1 | ⬜ |
-| 9 | Evaluation | ⬜ |
-| 10 | Production architecture | ⬜ |
+| 2 | Computer model + Resource model decisions | ✅ `docs/decisions/001+002` |
+| 2a | Machine Contract — provider-neutral `GET /v1/machine` profile | ✅ `docs/decisions/003-machine-contract.md` |
+| 2b | Persistent Computer State — external canonical + sync + env reconstruct | ✅ `docs/decisions/004-persistent-state.md` |
+| 3 | Machine & Execution API contract + OpenAPI | ✅ `docs/api/openapi.yaml` |
+| 4 | Workspace / Runtime / Security / Lifecycle models | ⬜ |
+| 5 | NALLY integration | ⬜ |
+| 6 | MVP v0.1 — disposable runtime + sync engine | ⬜ `nallputer/` |
+| 7 | Evaluation | ⬜ `tests/` |
+| 8 | Production architecture | ⬜ |
+
+Execution sequence: `2a ─┐ → 3 → 4 → 5 → 6 → 7 → 8` and `2b ─┘` (both block 3). Render is Lab Rat #1; external store is canonical (004).
 
 ## Repository structure
 
@@ -48,11 +50,15 @@ NallPuter/
 │   │   ├── e2b-daytona-modal.md
 │   │   ├── requirements.md
 │   │   └── _evidence-index.md
-│   └── decisions/         # Phase 2: locked decisions
-│       ├── 001-computer-model.md
-│       └── 002-resource-model.md
-├── nallputer/             # Implementation (Phase 8+)
-├── tests/                 # Phase 9 evaluation harness
+│   ├── decisions/         # Phases 2 + 2a + 2b: locked decisions
+│   │   ├── 001-computer-model.md        # + addendum 2026-09-07 (003/004)
+│   │   ├── 002-resource-model.md        # + addendum 2026-09-07 (003/004)
+│   │   ├── 003-machine-contract.md      # 2a: provider-neutral MachineProfile
+│   │   └── 004-persistent-state.md      # 2b: canonical external store + env reconstruct
+│   └── api/
+│       └── openapi.yaml               # Phase 3: Machine & Execution contract (Bearer, 501 stubs)
+├── nallputer/             # Implementation (Phase 6+)
+├── tests/                 # Phase 7 evaluation harness
 └── README.md
 ```
 
@@ -79,12 +85,14 @@ NallPuter/
 | API: exec, files, computer status | Snapshot/restore (v0.2+) |
 | Render private service deployment | |
 
-## Deployment target (v0.1)
+## Deployment target (v0.1 — Lab Rat #1)
 
 - **NALLY**: public Render web service
-- **NallPuter**: private Render service + persistent disk, same region
+- **NallPuter**: private Render service (ephemeral runtime) + external canonical storage (sync engine), same region
+- **Lab Rat impl**: Render Persistent Disk used as write-through cache behind the `external_canonical` abstraction (004) — swappable to S3/R2/volume without API break
 - **Network**: Render private networking (no public ingress to NallPuter)
-- **Auth**: Bearer token (NALLY → NallPuter), constant-time comparison
+- **Auth**: Bearer token v0.1 (constant-time compare, pluggable to mTLS/JWT — 003)
+- **Persistence**: runtime disposable; `GET /v1/machine` reports `persistence.*` and `restart_behavior`; `GET /v1/health.sync_state` exposes `synced|pending|degraded`
 
 ## Research evidence discipline
 
@@ -95,15 +103,16 @@ All Phase 1 documents separate three evidence tiers:
 
 This makes architecture decisions traceable and defensible.
 
-## Next: Phase 3 — API Contract
+## Next: Phase 4 — Workspace / Runtime / Security / Lifecycle Models
 
-Design the OpenAPI specification for:
-- `POST /v1/exec` → `run_id`
-- `GET /v1/exec/{run_id}` → output/status/exit (polling v0.1)
-- `DELETE /v1/exec/{run_id}` → cancel
-- `GET /v1/exec/{run_id}/stream` — contract-only (SSE/WebSocket future)
-- `POST /v1/files/{read,write,list}`
-- `GET/POST /v1/computer/{id}/{start,stop,destroy,status}`
+Builds on the now-locked Machine Contract (003) + Persistent State (004) + OpenAPI (Phase 3 `docs/api/openapi.yaml`):
+
+- `GET /v1/machine` → provider-neutral profile (persistence, resources, capabilities, `ephemeral_paths`/`persistent_paths`)
+- `GET /v1/health` → liveness + `computer_id` binding + `sync_state`
+- `POST /v1/exec` → `run_id`, `GET /v1/exec/{run_id}` polling, `DELETE` cancel (process-tree kill), `GET /stream` → `501` when `capabilities.streaming=false`
+- `POST /v1/files/{read,write,list}` — same policy model as exec, quota-checked, atomic; env spec at `.nallputer/state/environment.yaml` + `environment.lock` for `reconstructible` packages
+- `GET/POST /v1/computer/{id}/{start,stop,destroy}` + `GET/POST /v1/computer/{id}/sync` (debounced+flush+restore engine, 004)
+- Reserved 501s: `/computer/{id}/{pause,resume,snapshot}`
 
 ## License
 

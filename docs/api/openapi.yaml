@@ -1,0 +1,770 @@
+openapi: 3.1.0
+info:
+  title: NallPuter API
+  version: 0.1.0
+  description: |
+    Provider-neutral machine & execution contract for NALLY → NallPuter.
+    - Runtime is disposable; external persistent storage is canonical (Decision 004).
+    - MachineProfile (`GET /v1/machine`) must be read before execution — it defines
+      persistence, resources, capabilities, and restart behavior.
+    - All endpoints require Bearer auth (constant-time compare); private Render networking only.
+    - Streaming / pause / snapshot are contract-reserved and return 501 in v0.1 when
+      `capabilities.* == false`.
+
+    Evidence discipline: this spec is a NallPuter inference derived from
+    `docs/research/*` and locked by Decisions 003/004.
+  contact:
+    name: Klyntech
+    url: https://github.com/Klyntech/nallputer
+  license:
+    name: Proprietary — Klyntech / Clinton
+
+servers:
+  - url: https://nallputer.internal/v1
+    description: Render private networking — NALLPUTER (private service, same region as NALLY)
+  - url: http://localhost:8000/v1
+    description: Local dev
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: machine
+    description: Machine contract & health (Decision 003)
+  - name: computer
+    description: Computer lifecycle (create/start/stop/destroy/sync/health)
+  - name: exec
+    description: Execution — runs are `queued → running → succeeded|failed|timed_out|cancelled|policy_denied`
+  - name: files
+    description: Workspace file operations — same policy model as exec (Anthropic gap fix)
+
+paths:
+  /machine:
+    get:
+      tags: [machine]
+      summary: Get MachineProfile — provider-neutral computer description
+      operationId: getMachine
+      description: |
+        Must be callable before any exec. Cheap, cached. Requires same Bearer as exec (401 if missing).
+        `persistence.workspace=external_canonical` means the external store is canonical (004);
+        `persistence.packages=reconstructible` means NALLY must persist env spec, not assume FS survives.
+      responses:
+        '200':
+          description: MachineProfile
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MachineProfile' }
+              examples:
+                labRat:
+                  value:
+                    computer_id: cmp_lab_001
+                    provider: render
+                    runtime: nallputer-0.1.0
+                    revision: 58dc6db
+                    created_at: '2026-09-07T00:00:00Z'
+                    persistence:
+                      instance: ephemeral
+                      workspace: external_canonical
+                      workspace_mechanism: persistent_disk
+                      packages: reconstructible
+                      snapshots: false
+                    resources:
+                      cpu_millicores: 500
+                      memory_mb: 512
+                      disk_gb: 2
+                      pids: 100
+                      wall_time_sec: 300
+                      max_output_bytes: 100000
+                      workspace_gb: 1
+                    capabilities:
+                      shell: true
+                      files: true
+                      package_install: true
+                      network: true
+                      egress_policy: deny-by-default
+                      streaming: false
+                      pause_resume: false
+                      snapshot_restore: false
+                    restart_behavior: instance_recreated
+                    ephemeral_paths: ["/tmp", "/workspace/.cache", "/workspace/tmp"]
+                    persistent_paths: ["/home/nally/workspace", "/home/nally/workspace/projects", "/home/nally/workspace/.nallputer/state"]
+                persistentVM:
+                  value:
+                    computer_id: cmp_prod_042
+                    provider: aws
+                    runtime: nallputer-0.2.0
+                    persistence:
+                      instance: persistent
+                      workspace: persistent
+                      workspace_mechanism: volume
+                      packages: persistent
+                      snapshots: true
+                    resources:
+                      cpu_millicores: 8000
+                      memory_mb: 32768
+                      disk_gb: 200
+                      pids: 4000
+                      wall_time_sec: 1800
+                      max_output_bytes: 200000
+                      workspace_gb: 100
+                    capabilities:
+                      shell: true
+                      files: true
+                      package_install: true
+                      network: true
+                      egress_policy: allowlist
+                      streaming: true
+                      pause_resume: true
+                      snapshot_restore: true
+                    restart_behavior: state_preserved
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /health:
+    get:
+      tags: [machine]
+      summary: Liveness + computer_id binding + sync state
+      operationId: getHealth
+      description: |
+        Use to detect instance recreation: `computer_id` stays same, `uptime_sec` resets.
+        If sync engine unreachable, returns 503 with `sync_state: degraded` (not `running`).
+      responses:
+        '200':
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+              example:
+                status: ok
+                computer_id: cmp_lab_001
+                uptime_sec: 3721
+                sync_state: synced
+                last_sync_rev: 42
+                last_sync_at: '2026-09-07T09:01:00Z'
+        '503':
+          description: Degraded — sync unreachable or env replay failed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+              example:
+                status: degraded
+                computer_id: cmp_lab_001
+                uptime_sec: 12
+                sync_state: degraded
+                last_error: env_replay_failed
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /computer:
+    post:
+      tags: [computer]
+      summary: Create computer
+      operationId: createComputer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resources:
+                  $ref: '#/components/schemas/ResourcesInput'
+              example:
+                resources: { cpu_millicores: 500, memory_mb: 512, disk_gb: 2 }
+      responses:
+        '201':
+          description: Created — returns computer_id
+          headers:
+            Idempotency-Key:
+              schema: { type: string }
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [computer_id, machine]
+                properties:
+                  computer_id: { type: string, example: cmp_01j9f2abc }
+                  machine: { $ref: '#/components/schemas/MachineProfile' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    get:
+      tags: [computer]
+      summary: List computers (single-tenant v0.1 → typically 1)
+      operationId: listComputers
+      responses:
+        '200':
+          description: List
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [computers]
+                properties:
+                  computers:
+                    type: array
+                    items: { $ref: '#/components/schemas/Computer' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /computer/{computer_id}:
+    get:
+      tags: [computer]
+      summary: Get computer status
+      operationId: getComputer
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Computer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Computer' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /computer/{computer_id}/start:
+    post:
+      tags: [computer]
+      summary: Start computer (triggers restore+env replay if stopped)
+      operationId: startComputer
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '202': { description: Starting — poll GET /computer/{id} / GET /health, content: { application/json: { schema: { $ref: '#/components/schemas/Computer' } } } }
+        '409': { description: Already running, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /computer/{computer_id}/stop:
+    post:
+      tags: [computer]
+      summary: Stop computer (flush → persist → release compute; external store retained)
+      operationId: stopComputer
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '202': { description: Stopping — flush up to 10s, then stopped, content: { application/json: { schema: { $ref: '#/components/schemas/Computer' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /computer/{computer_id}/destroy:
+    post:
+      tags: [computer]
+      summary: Destroy computer (deletes external canonical prefix) — explicit, idempotent
+      operationId: destroyComputer
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, format: uuid }, description: Required to prevent accidental destroy }
+      responses:
+        '202': { description: Destroying }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /computer/{computer_id}/sync:
+    get:
+      tags: [computer]
+      summary: Sync status (optional but recommended for evaluation)
+      operationId: getSync
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Sync state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SyncState' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [computer]
+      summary: Force sync flush (durability barrier) — 202
+      operationId: forceSync
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '202':
+          description: Sync requested
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SyncState' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # Reserved v0.1 501s — present for forward-compat
+  /computer/{computer_id}/pause:
+    post:
+      tags: [computer]
+      summary: Pause — reserved, 501 in v0.1
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '501':
+          description: pause_resume not supported when capabilities.pause_resume=false
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CapabilityError' }
+              example: { code: pause_not_supported, capability: pause_resume, supported: false }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /computer/{computer_id}/resume:
+    post:
+      tags: [computer]
+      summary: Resume — reserved, 501 in v0.1
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '501': { description: Not implemented, content: { application/json: { schema: { $ref: '#/components/schemas/CapabilityError' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /computer/{computer_id}/snapshot:
+    post:
+      tags: [computer]
+      summary: Snapshot — reserved, 501 in v0.1
+      parameters:
+        - { name: computer_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '501': { description: Not implemented, content: { application/json: { schema: { $ref: '#/components/schemas/CapabilityError' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /exec:
+    post:
+      tags: [exec]
+      summary: Create execution run → run_id (non-blocking, poll or 501-stream)
+      operationId: createExec
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema: { type: string, format: uuid }
+          description: Retried POST with same key returns same run_id+status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ExecCreate' }
+            examples:
+              simple:
+                value: { computer_id: cmp_lab_001, command: "ls -la", cwd: "/home/nally/workspace/projects" }
+              withTimeout:
+                value: { computer_id: cmp_lab_001, command: "pytest -q", cwd: "/home/nally/workspace/projects", timeout_sec: 120 }
+      responses:
+        '201':
+          description: Run created
+          headers:
+            Idempotency-Key: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Policy denied — NallPuter policy engine rejected before spawn
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+              example:
+                run_id: run_abc
+                computer_id: cmp_lab_001
+                status: policy_denied
+                exit_code: null
+                policy_result: { decision: deny, reason: egress_blocked, destination: "evil.com:443" }
+        '507':
+          description: Workspace quota exceeded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { code: workspace_quota_exceeded, message: "workspace_gb limit reached" }
+
+  /exec/{run_id}:
+    get:
+      tags: [exec]
+      summary: Get run status + bounded output (polling transport v0.1)
+      operationId: getExec
+      parameters:
+        - { name: run_id, in: path, required: true, schema: { type: string } }
+        - { name: cursor, in: query, required: false, schema: { type: integer, minimum: 0 }, description: Byte offset for stdout pagination }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100000 }, description: Max bytes returned this page }
+      responses:
+        '200':
+          description: Run
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410': { description: Run evicted (TTL expired), content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    delete:
+      tags: [exec]
+      summary: Cancel run — kills process tree
+      operationId: cancelExec
+      parameters:
+        - { name: run_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+              example: { run_id: run_abc, status: cancelled }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { description: Already terminal, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /exec/{run_id}/stream:
+    get:
+      tags: [exec]
+      summary: Stream run output — reserved, 501 in v0.1 (advertised via capabilities.streaming)
+      operationId: streamExec
+      parameters:
+        - { name: run_id, in: path, required: true, schema: { type: string } }
+      responses:
+        '501':
+          description: streaming_not_supported
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CapabilityError' }
+              example: { code: streaming_not_supported, capability: streaming, supported: false, hint: "poll GET /v1/exec/{run_id} with ?cursor=&limit=" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /files/read:
+    post:
+      tags: [files]
+      summary: Read file (range + bounded) — same policy model as exec
+      operationId: readFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FileReadRequest' }
+      responses:
+        '200':
+          description: File content
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileReadResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413': { description: File too large for single read — use range, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /files/write:
+    post:
+      tags: [files]
+      summary: Write file — atomic, quota-checked, same policy as exec
+      operationId: writeFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FileWriteRequest' }
+            examples:
+              envSpec:
+                value:
+                  computer_id: cmp_lab_001
+                  path: "/home/nally/workspace/.nallputer/state/environment.yaml"
+                  content: "version: 1\npython:\n  packages: [\"pandas==2.2.3\"]\n"
+                  encoding: utf8
+      responses:
+        '200':
+          description: Written — returns sync hint
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [path, bytes_written, sync_state]
+                properties:
+                  path: { type: string }
+                  bytes_written: { type: integer }
+                  sync_state: { $ref: '#/components/schemas/SyncState' }
+                  environment:
+                    type: object
+                    properties:
+                      spec_rev: { type: integer }
+                      lock_rev: { type: integer }
+                      drift: { type: string, nullable: true }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { description: Policy denied — outside persistent_paths or blocked, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '507': { description: Workspace quota exceeded, content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+
+  /files/list:
+    post:
+      tags: [files]
+      summary: List directory — bounded, no recursive dump by default
+      operationId: listFiles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/FileListRequest' }
+      responses:
+        '200':
+          description: Listing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/FileListResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        v0.1: opaque Bearer token (single NALLY→NallPuter trust), constant-time compare.
+        Interface is pluggable — mTLS/signed JWT can replace verification without changing paths.
+
+  responses:
+    Unauthorized:
+      description: Missing/invalid Bearer token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: unauthorized, message: "invalid bearer token" }
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: not_found, message: "computer not found" }
+
+  schemas:
+    MachineProfile:
+      type: object
+      required: [computer_id, provider, runtime, persistence, resources, capabilities, restart_behavior, ephemeral_paths, persistent_paths]
+      properties:
+        computer_id: { type: string, pattern: '^cmp_[a-zA-Z0-9_-]+$', example: cmp_lab_001 }
+        provider: { type: string, description: Provider label — NALLY must not branch on this, example: render }
+        runtime: { type: string, example: nallputer-0.1.0 }
+        revision: { type: string, nullable: true, example: 58dc6db }
+        created_at: { type: string, format: date-time }
+        persistence:
+          type: object
+          required: [instance, workspace, packages]
+          properties:
+            instance: { type: string, enum: [ephemeral, persistent], description: Does the runtime process survive restart? }
+            workspace: { type: string, enum: [ephemeral, persistent, external_canonical], description: User-visible workspace durability }
+            workspace_mechanism: { type: string, enum: [external_canonical, persistent_disk, object_store, volume], nullable: true }
+            packages: { type: string, enum: [ephemeral, persistent, reconstructible], description: Package env durability — reconstructible = env spec replay (004) }
+            snapshots: { type: boolean, default: false }
+        resources:
+          type: object
+          required: [cpu_millicores, memory_mb, disk_gb, pids, wall_time_sec, max_output_bytes, workspace_gb]
+          properties:
+            cpu_millicores: { type: integer, minimum: 100, example: 500 }
+            memory_mb: { type: integer, minimum: 128, example: 512 }
+            disk_gb: { type: integer, minimum: 1, example: 2 }
+            pids: { type: integer, example: 100 }
+            wall_time_sec: { type: integer, example: 300 }
+            max_output_bytes: { type: integer, example: 100000 }
+            workspace_gb: { type: integer, example: 1 }
+        capabilities:
+          type: object
+          required: [shell, files, package_install, network, streaming, pause_resume, snapshot_restore]
+          properties:
+            shell: { type: boolean }
+            files: { type: boolean }
+            package_install: { type: boolean }
+            network: { type: boolean }
+            egress_policy: { type: string, enum: [deny-by-default, allowlist, unrestricted], example: deny-by-default }
+            streaming: { type: boolean, description: If false, GET /v1/exec/{id}/stream returns 501 }
+            pause_resume: { type: boolean }
+            snapshot_restore: { type: boolean }
+        restart_behavior: { type: string, enum: [instance_recreated, state_preserved] }
+        ephemeral_paths: { type: array, items: { type: string } }
+        persistent_paths: { type: array, items: { type: string } }
+
+    Health:
+      type: object
+      required: [status, computer_id, uptime_sec, sync_state]
+      properties:
+        status: { type: string, enum: [ok, degraded, recovering] }
+        computer_id: { type: string }
+        uptime_sec: { type: integer }
+        sync_state: { type: string, enum: [synced, pending, degraded, env_replay_failed] }
+        last_sync_rev: { type: integer, nullable: true }
+        last_sync_at: { type: string, format: date-time, nullable: true }
+        last_error: { type: string, nullable: true }
+
+    Computer:
+      type: object
+      required: [computer_id, state, machine]
+      properties:
+        computer_id: { type: string }
+        state: { type: string, enum: [creating, running, idle, stopping, stopped, starting, error, recovering, destroyed] }
+        machine: { $ref: '#/components/schemas/MachineProfile' }
+        resources_usage:
+          type: object
+          properties:
+            memory_mb: { type: number }
+            cpu_millicores: { type: number }
+            disk_used_gb: { type: number }
+            pids_used: { type: integer }
+            workspace_used_gb: { type: number }
+        sync_state: { $ref: '#/components/schemas/SyncState' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    SyncState:
+      type: object
+      required: [sync_state]
+      properties:
+        sync_state: { type: string, enum: [synced, pending, degraded, env_replay_failed] }
+        last_sync_rev: { type: integer, nullable: true }
+        last_sync_at: { type: string, format: date-time, nullable: true }
+        dirty_count: { type: integer, minimum: 0, nullable: true }
+        dirty_files: { type: array, items: { type: string }, nullable: true }
+        last_error: { type: string, nullable: true }
+
+    ResourcesInput:
+      type: object
+      properties:
+        cpu_millicores: { type: integer, minimum: 100 }
+        memory_mb: { type: integer, minimum: 128 }
+        disk_gb: { type: integer, minimum: 1 }
+        pids: { type: integer }
+        wall_time_sec: { type: integer }
+        max_output_bytes: { type: integer }
+        workspace_gb: { type: integer }
+
+    ExecCreate:
+      type: object
+      required: [computer_id, command]
+      properties:
+        computer_id: { type: string }
+        command: { type: string, description: Shell command (`bash -c` in v0.1), example: "pip install pandas==2.2.3" }
+        cwd: { type: string, nullable: true, example: "/home/nally/workspace/projects" }
+        timeout_sec: { type: integer, minimum: 1, nullable: true, description: Override MachineProfile wall_time_sec per-run }
+        env:
+          type: object
+          additionalProperties: { type: string }
+          nullable: true
+          description: Scoped env overlay — never inherits full NALLY env; scrubbed by policy
+
+    Run:
+      type: object
+      required: [run_id, computer_id, status]
+      properties:
+        run_id: { type: string, pattern: '^run_[a-zA-Z0-9_-]+$', example: run_01j9fabc }
+        computer_id: { type: string }
+        status: { type: string, enum: [queued, running, succeeded, failed, timed_out, cancelled, policy_denied] }
+        command: { type: string, nullable: true }
+        cwd: { type: string, nullable: true }
+        exit_code: { type: integer, nullable: true }
+        stdout: { type: string, nullable: true, description: Bounded, paginated slice per ?cursor=&limit= }
+        stderr: { type: string, nullable: true }
+        truncated: { type: boolean, description: True if output exceeded max_output_bytes }
+        bytes: { type: integer, description: Total bytes stored (may exceed returned slice) }
+        started_at: { type: string, format: date-time, nullable: true }
+        finished_at: { type: string, format: date-time, nullable: true }
+        wall_time_ms: { type: integer, nullable: true }
+        policy_result:
+          type: object
+          nullable: true
+          properties:
+            decision: { type: string, enum: [allow, deny] }
+            reason: { type: string, nullable: true }
+            destination: { type: string, nullable: true }
+        error:
+          $ref: '#/components/schemas/Error'
+        environment:
+          type: object
+          nullable: true
+          properties:
+            spec_rev: { type: integer, nullable: true }
+            lock_rev: { type: integer, nullable: true }
+            drift: { type: string, nullable: true, description: e.g. env_drift_detected }
+        sync_pending: { type: boolean, nullable: true, description: True if workspace dirty set non-empty after this run }
+
+    FileReadRequest:
+      type: object
+      required: [computer_id, path]
+      properties:
+        computer_id: { type: string }
+        path: { type: string, example: "/home/nally/workspace/projects/app.py" }
+        offset: { type: integer, minimum: 0, nullable: true }
+        limit: { type: integer, minimum: 1, maximum: 100000, nullable: true, description: Max bytes; use pagination for large files }
+        encoding: { type: string, enum: [utf8, base64], default: utf8 }
+
+    FileReadResponse:
+      type: object
+      required: [path, content, truncated, total_bytes]
+      properties:
+        path: { type: string }
+        content: { type: string }
+        encoding: { type: string, enum: [utf8, base64] }
+        truncated: { type: boolean }
+        total_bytes: { type: integer }
+        offset: { type: integer }
+        next_cursor: { type: integer, nullable: true }
+
+    FileWriteRequest:
+      type: object
+      required: [computer_id, path, content]
+      properties:
+        computer_id: { type: string }
+        path: { type: string, example: "/home/nally/workspace/projects/README.md" }
+        content: { type: string }
+        encoding: { type: string, enum: [utf8, base64], default: utf8 }
+        mode: { type: string, nullable: true, description: fs mode, e.g. "0644" }
+
+    FileListRequest:
+      type: object
+      required: [computer_id, path]
+      properties:
+        computer_id: { type: string }
+        path: { type: string, example: "/home/nally/workspace/projects" }
+        recursive: { type: boolean, default: false }
+        limit: { type: integer, minimum: 1, maximum: 1000, default: 100 }
+        cursor: { type: string, nullable: true }
+
+    FileListResponse:
+      type: object
+      required: [path, entries]
+      properties:
+        path: { type: string }
+        entries:
+          type: array
+          items:
+            type: object
+            required: [name, path, type]
+            properties:
+              name: { type: string }
+              path: { type: string }
+              type: { type: string, enum: [file, dir, symlink] }
+              size: { type: integer, nullable: true }
+              mtime: { type: string, format: date-time, nullable: true }
+        truncated: { type: boolean }
+        next_cursor: { type: string, nullable: true }
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string, example: not_found }
+        message: { type: string }
+        details: { type: object, nullable: true, additionalProperties: true }
+
+    CapabilityError:
+      type: object
+      required: [code, capability, supported]
+      properties:
+        code: { type: string, example: streaming_not_supported }
+        capability: { type: string, example: streaming }
+        supported: { type: boolean, example: false }
+        hint: { type: string, nullable: true }
+
+  parameters:
+    ComputerId:
+      name: computer_id
+      in: path
+      required: true
+      schema: { type: string }
+    RunId:
+      name: run_id
+      in: path
+      required: true
+      schema: { type: string }
+
+  headers:
+    IdempotencyKey:
+      description: Idempotency key for retried POST
+      schema: { type: string, format: uuid }
