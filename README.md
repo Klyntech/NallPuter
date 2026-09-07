@@ -29,7 +29,7 @@ NallPuter (computer)
 | 2a | Machine Contract — provider-neutral `GET /v1/machine` profile | ✅ `docs/decisions/003-machine-contract.md` |
 | 2b | Persistent Computer State — external canonical + sync + env reconstruct | ✅ `docs/decisions/004-persistent-state.md` |
 | 3 | Machine & Execution API contract + OpenAPI | ✅ `docs/api/openapi.yaml` |
-| 4 | Workspace / Runtime / Security / Lifecycle models | ⬜ |
+| 4 | Workspace + Runtime + Security + Lifecycle models | ✅ `docs/decisions/005` `006` `007` `008` |
 | 5 | NALLY integration | ⬜ |
 | 6 | MVP v0.1 — disposable runtime + sync engine | ⬜ `nallputer/` |
 | 7 | Evaluation | ⬜ `tests/` |
@@ -50,11 +50,15 @@ NallPuter/
 │   │   ├── e2b-daytona-modal.md
 │   │   ├── requirements.md
 │   │   └── _evidence-index.md
-│   ├── decisions/         # Phases 2 + 2a + 2b: locked decisions
+│   ├── decisions/         # Phases 2 + 2a + 2b + 4: locked decisions
 │   │   ├── 001-computer-model.md        # + addendum 2026-09-07 (003/004)
 │   │   ├── 002-resource-model.md        # + addendum 2026-09-07 (003/004)
 │   │   ├── 003-machine-contract.md      # 2a: provider-neutral MachineProfile
-│   │   └── 004-persistent-state.md      # 2b: canonical external store + env reconstruct
+│   │   ├── 004-persistent-state.md      # 2b: canonical external store + env reconstruct
+│   │   ├── 005-workspace-model.md       # Phase 4: workspace layout, quota, sync
+│   │   ├── 006-runtime-model.md         # Phase 4: cgroup v2, Docker, process groups
+│   │   ├── 007-security-model.md        # Phase 4: FS+net, credential isolation, audit
+│   │   └── 008-lifecycle-model.md       # Phase 4: computer+run state machines, auto-stop
 │   └── api/
 │       └── openapi.yaml               # Phase 3: Machine & Execution contract (Bearer, 501 stubs)
 ├── nallputer/             # Implementation (Phase 6+)
@@ -103,16 +107,9 @@ All Phase 1 documents separate three evidence tiers:
 
 This makes architecture decisions traceable and defensible.
 
-## Next: Phase 4 — Workspace / Runtime / Security / Lifecycle Models
+## Next: Phase 5 — NALLY Integration
 
-Builds on the now-locked Machine Contract (003) + Persistent State (004) + OpenAPI (Phase 3 `docs/api/openapi.yaml`):
-
-- `GET /v1/machine` → provider-neutral profile (persistence, resources, capabilities, `ephemeral_paths`/`persistent_paths`)
-- `GET /v1/health` → liveness + `computer_id` binding + `sync_state`
-- `POST /v1/exec` → `run_id`, `GET /v1/exec/{run_id}` polling, `DELETE` cancel (process-tree kill), `GET /stream` → `501` when `capabilities.streaming=false`
-- `POST /v1/files/{read,write,list}` — same policy model as exec, quota-checked, atomic; env spec at `.nallputer/state/environment.yaml` + `environment.lock` for `reconstructible` packages
-- `GET/POST /v1/computer/{id}/{start,stop,destroy}` + `GET/POST /v1/computer/{id}/sync` (debounced+flush+restore engine, 004)
-- Reserved 501s: `/computer/{id}/{pause,resume,snapshot}`
+Phase 4 is now locked (`005` workspace + `006` runtime + `007` security + `008` lifecycle). Two deferred choices are now settled: **cgroup v2 unified** (006) and **userspace egress proxy** with `HTTP_PROXY` injection + deny-by-default allowlist (007). NALLY integration will define the private-network client (Bearer, polling, idempotency, `GET /v1/machine` preflight, reconnect on `uptime_sec` reset).
 
 ## License
 
