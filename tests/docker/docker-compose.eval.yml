@@ -16,6 +16,8 @@ services:
     # No ports needed — TestClient is in-process. Private networking not required for local eval.
     # Keep container ephemeral; no restart, no persistent volume for eval.
     restart: "no"
+    # Run as root for eval so mounted host dir (owned by runner) is writable; nally user exists but host volume blocks it
+    user: "0:0"
     # Resource caps mirror Lab Rat defaults (002/006) — verify cgroup v2 enforcement inside
     cpus: 0.5
     mem_limit: 512m
