@@ -1,4 +1,4 @@
-# NallPuter Phase 1 Synthesis — Requirements
+﻿# NallPuter Phase 1 Synthesis â€” Requirements
 
 > Purpose: translate prior-art research into candidate requirements for the NallPuter architecture. This document is a synthesis, not an implementation specification.
 
@@ -7,7 +7,7 @@
 - A requirement is a NallPuter design inference unless explicitly marked otherwise.
 - Vendor claims are not treated as proof that the same implementation is suitable for NallPuter.
 - Third-party observations inform interface design but do not become product guarantees.
-- Any unresolved item remains an architecture decision for Phase 2–6.
+- Any unresolved item remains an architecture decision for Phase 2â€“6.
 
 ## Mission
 
@@ -17,7 +17,7 @@ NALLY is the brain/orchestrator.
 
 NallPuter is the isolated environment that owns execution, workspace state, processes, resource limits, lifecycle, and runtime enforcement.
 
-The first interface is `NALLY → authenticated API → NallPuter`.
+The first interface is `NALLY â†’ authenticated API â†’ NallPuter`.
 
 The first deployment target is a private Render service with persistent storage.
 
@@ -42,7 +42,7 @@ Across the researched systems, the repeated primitives are:
 
 The systems differ mainly in how much persistence and lifecycle sophistication they provide.
 
-## Pillar 1 — Isolation
+## Pillar 1 â€” Isolation
 
 ### Filesystem isolation
 
@@ -76,27 +76,27 @@ The systems differ mainly in how much persistence and lifecycle sophistication t
 - `.ssh`, cloud credentials, and host-level secrets should not become ambient sandbox files.
 - Credential use should be visible in audit data without logging secret values.
 
-## Pillar 2 — Lifecycle
+## Pillar 2 â€” Lifecycle
 
 ### Computer lifecycle
 
 Candidate state model:
 
-`creating → running → idle → stopping → stopped → starting → running`
+`creating â†’ running â†’ idle â†’ stopping â†’ stopped â†’ starting â†’ running`
 
 Failure path:
 
-`running → error → recovering → running | stopped | destroyed`
+`running â†’ error â†’ recovering â†’ running | stopped | destroyed`
 
 Future VM path:
 
-`running → pausing → paused → resuming → running`
+`running â†’ pausing â†’ paused â†’ resuming â†’ running`
 
 ### Run lifecycle
 
 Candidate state model:
 
-`queued → running → succeeded`
+`queued â†’ running â†’ succeeded`
 
 Alternative terminal paths:
 
@@ -117,7 +117,7 @@ v0.1 promises the first two.
 
 v0.2+ may add process/memory persistence through pause/resume or memory snapshots.
 
-## Pillar 3 — Workspace
+## Pillar 3 â€” Workspace
 
 Candidate layout:
 
@@ -155,7 +155,7 @@ NallPuter should expose independent resource knobs:
 | Workspace | logical disk quota | bytes/files |
 | Network | egress policy and limits | requests/bytes/destinations |
 
-“Bigger NallPuter” means increasing one or more of these knobs; it does not require a new product architecture.
+â€œBigger NallPuterâ€ means increasing one or more of these knobs; it does not require a new product architecture.
 
 ## API contract requirements
 
@@ -197,7 +197,7 @@ NallPuter independently enforces runtime policy.
 
 Therefore:
 
-`NALLY decision → authenticated request → NallPuter policy engine → OS/runtime enforcement → execution`
+`NALLY decision â†’ authenticated request â†’ NallPuter policy engine â†’ OS/runtime enforcement â†’ execution`
 
 Neither layer is allowed to silently weaken the other.
 
@@ -265,17 +265,17 @@ The API must make these measurable:
 
 Comparison should eventually include:
 
-`local NALLY subprocess execution` vs `NALLY → NallPuter`.
+`local NALLY subprocess execution` vs `NALLY â†’ NallPuter`.
 
 ## What the research changes
 
 The prior art changes the target from:
 
-“remote run_command”
+â€œremote run_commandâ€
 
 to:
 
-“isolated computer runtime with an agent-facing contract.”
+â€œisolated computer runtime with an agent-facing contract.â€
 
 That means the API, lifecycle, resource model, and security boundary all matter as much as command execution.
 
@@ -292,209 +292,3 @@ That means the API, lifecycle, resource model, and security boundary all matter 
 - auto-stop policy
 - snapshot scope
 - multi-user ownership model
-- Research note 1: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 2: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 3: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 4: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 5: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 6: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 7: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 8: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 9: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 10: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 11: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 12: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 13: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 14: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 15: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 16: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 17: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 18: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 19: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 20: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 21: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 22: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 23: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 24: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 25: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 26: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 27: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 28: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 29: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 30: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 31: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 32: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 33: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 34: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 35: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 36: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 37: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 38: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 39: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 40: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 41: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 42: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 43: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 44: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 45: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 46: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 47: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 48: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 49: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 50: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 51: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 52: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 53: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 54: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 55: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 56: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 57: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 58: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 59: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 60: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 61: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 62: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 63: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 64: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 65: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 66: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 67: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 68: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 69: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 70: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 71: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 72: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 73: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 74: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 75: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 76: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 77: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 78: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 79: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 80: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 81: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 82: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 83: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 84: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 85: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 86: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 87: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 88: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 89: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 90: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 91: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 92: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 93: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 94: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 95: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 96: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 97: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 98: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 99: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 100: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 101: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 102: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 103: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 104: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 105: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 106: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 107: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 108: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 109: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 110: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 111: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 112: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 113: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 114: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 115: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 116: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 117: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 118: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 119: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 120: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 121: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 122: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 123: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 124: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 125: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 126: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 127: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 128: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 129: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 130: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 131: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 132: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 133: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 134: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 135: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 136: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 137: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 138: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 139: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 140: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 141: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 142: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 143: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 144: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 145: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 146: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 147: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 148: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 149: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 150: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 151: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 152: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 153: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 154: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 155: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 156: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 157: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 158: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 159: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 160: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 161: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 162: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 163: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 164: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 165: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 166: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 167: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 168: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 169: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 170: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 171: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 172: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 173: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 174: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 175: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 176: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 177: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 178: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 179: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 180: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 181: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 182: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 183: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 184: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 185: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 186: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 187: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 188: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 189: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 190: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 191: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 192: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 193: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 194: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 195: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 196: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 197: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 198: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 199: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 200: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 201: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 202: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 203: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 204: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 205: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
-- Research note 206: requirements synthesis: retain evidence, label inference, and defer provider-specific choices to the formal Phase 2 decisions. Record the observed mechanism, the evidence source, the NallPuter implication, and any unresolved limitation.
