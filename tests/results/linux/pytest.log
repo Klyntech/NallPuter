@@ -1,0 +1,40 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.6.0 -- /usr/local/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /app
+plugins: anyio-4.15.1
+collecting ... collected 21 items / 1 deselected / 20 selected
+
+tests/test_isolation.py::test_workspace_jail PASSED                      [  5%]
+tests/test_isolation.py::test_egress_policy PASSED                       [ 10%]
+tests/test_isolation.py::test_credential_in_spec_blocked PASSED          [ 15%]
+tests/test_latency.py::test_latency_exec_vs_subprocess PASSED            [ 20%]
+tests/test_latency.py::test_latency_polling_overhead PASSED              [ 25%]
+tests/test_lifecycle.py::test_timeout PASSED                             [ 30%]
+tests/test_lifecycle.py::test_cancellation PASSED                        [ 35%]
+tests/test_lifecycle.py::test_stream_pause_snapshot_501 PASSED           [ 40%]
+tests/test_linux_cgroup.py::test_cgroup_v2_and_pids PASSED               [ 45%]
+tests/test_linux_cgroup.py::test_concurrency_5 PASSED                    [ 50%]
+tests/test_output.py::test_empty_output PASSED                           [ 55%]
+tests/test_output.py::test_output_exact PASSED                           [ 60%]
+tests/test_output.py::test_output_truncation PASSED                      [ 65%]
+tests/test_output.py::test_output_pagination PASSED                      [ 70%]
+tests/test_persistence.py::test_files_write_read_list PASSED             [ 75%]
+tests/test_persistence.py::test_sync_pending_to_synced PASSED            [ 80%]
+tests/test_persistence.py::test_base64_roundtrip PASSED                  [ 85%]
+tests/test_persistence.py::test_environment_spec PASSED                  [ 90%]
+tests/test_persistence.py::test_stop_start_persistence PASSED            [ 95%]
+tests/test_startup.py::test_startup_warm PASSED                          [100%]
+
+=============================== warnings summary ===============================
+../usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /usr/local/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+../usr/local/lib/python3.12/site-packages/starlette/testclient.py:53
+  /usr/local/lib/python3.12/site-packages/starlette/testclient.py:53: DeprecationWarning: The anyio.abc.BlockingPortal alias is deprecated, use anyio.from_thread.BlockingPortal instead.
+    _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+------------ generated xml file: /app/tests/results/linux/junit.xml ------------
+================= 20 passed, 1 deselected, 2 warnings in 4.72s =================
