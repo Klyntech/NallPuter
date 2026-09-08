@@ -9,7 +9,7 @@ eval-minimal:
 # Phase 7-full — requires Docker (runnable when available, measure-only)
 eval-linux:
 	@echo "Building nallputer:eval and running Linux harness..."
-	docker build -f tests/docker/Dockerfile.eval -t nallputer:eval .
+	docker build --no-cache -f tests/docker/Dockerfile.eval -t nallputer:eval .
 	docker compose -f tests/docker/docker-compose.eval.yml up --build --abort-on-container-exit || true
 	python tests/docker/collect.py || echo "collect failed — see tests/results/linux/pytest.log"
 	@echo "Windows: tests/results/REPORT.md (5a44765)  |  Linux: tests/results/linux/REPORT.md"
