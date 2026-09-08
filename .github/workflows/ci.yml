@@ -37,6 +37,7 @@ jobs:
         env:
           NALLPUTER_TOKEN: dev-token
           NALLPUTER_PROVIDER: ci
+          NALLPUTER_WORKSPACE: /tmp/nallputer-workspace
           PYTHONPATH: nallputer
         run: pytest tests -k "not linux" -v --junitxml=tests/results/junit.xml
 
@@ -67,6 +68,8 @@ jobs:
       - name: Run Linux harness
         env:
           DOCKER_BUILDKIT: 1
+          NALLPUTER_TOKEN: dev-token
+          NALLPUTER_WORKSPACE: /tmp/nallputer-workspace
         run: make eval-linux
 
       - name: Upload results-linux

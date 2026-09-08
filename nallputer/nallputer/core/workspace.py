@@ -13,9 +13,24 @@ EPHEMERAL_SUBS = {"tmp", ".cache"}
 DENY_CACHE_SUFFIXES = {"__pycache__", ".pytest_cache", "node_modules/.cache", ".cache"}
 
 def _ensure_workspace():
-    WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
-    for sub in ("projects","files","artifacts","tmp",".cache",".nallputer/state",".nallputer/logs"):
-        (WORKSPACE_ROOT / sub).mkdir(parents=True, exist_ok=True)
+    # 005: ensure workspace exists, but do not crash on permission errors (CI uses RUNNER_TEMP)
+    try:
+        WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
+        for sub in ("projects","files","artifacts","tmp",".cache",".nallputer/state",".nallputer/logs"):
+            (WORKSPACE_ROOT / sub).mkdir(parents=True, exist_ok=True)
+    except PermissionError as e:
+        # Fall back to tmp if /home/nally not writable (e.g., GitHub Actions host)
+        import tempfile
+
+        fb = Path(tempfile.gettempdir()) / "nallputer-workspace"
+        try:
+            fb.mkdir(parents=True, exist_ok=True)
+            for sub in ("projects","files","artifacts","tmp",".cache",".nallputer/state",".nallputer/logs"):
+                (fb / sub).mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
+        # do not raise — caller may use NALLPUTER_WORKSPACE override
+        print(f"[workspace] warning: could not create {WORKSPACE_ROOT}: {e} — using fallback {fb}", flush=True)
 
 _ensure_workspace()
 
