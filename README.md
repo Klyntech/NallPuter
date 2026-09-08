@@ -30,7 +30,7 @@ NallPuter (computer)
 | 2b | Persistent Computer State — external canonical + sync + env reconstruct | ✅ `docs/decisions/004-persistent-state.md` |
 | 3 | Machine & Execution API contract + OpenAPI | ✅ `docs/api/openapi.yaml` |
 | 4 | Workspace + Runtime + Security + Lifecycle models | ✅ `docs/decisions/005` `006` `007` `008` |
-| 5 | NALLY integration | ⬜ |
+| 5 | NALLY integration — Computer Adapter | ✅ `docs/decisions/009-nally-integration.md` |
 | 6 | MVP v0.1 — disposable runtime + sync engine | ⬜ `nallputer/` |
 | 7 | Evaluation | ⬜ `tests/` |
 | 8 | Production architecture | ⬜ |
@@ -50,7 +50,7 @@ NallPuter/
 │   │   ├── e2b-daytona-modal.md
 │   │   ├── requirements.md
 │   │   └── _evidence-index.md
-│   ├── decisions/         # Phases 2 + 2a + 2b + 4: locked decisions
+│   ├── decisions/         # Phases 2 + 2a + 2b + 4 + 5: locked decisions
 │   │   ├── 001-computer-model.md        # + addendum 2026-09-07 (003/004)
 │   │   ├── 002-resource-model.md        # + addendum 2026-09-07 (003/004)
 │   │   ├── 003-machine-contract.md      # 2a: provider-neutral MachineProfile
@@ -58,7 +58,8 @@ NallPuter/
 │   │   ├── 005-workspace-model.md       # Phase 4: workspace layout, quota, sync
 │   │   ├── 006-runtime-model.md         # Phase 4: cgroup v2, Docker, process groups
 │   │   ├── 007-security-model.md        # Phase 4: FS+net, credential isolation, audit
-│   │   └── 008-lifecycle-model.md       # Phase 4: computer+run state machines, auto-stop
+│   │   ├── 008-lifecycle-model.md       # Phase 4: computer+run state machines, auto-stop
+│   │   └── 009-nally-integration.md     # Phase 5: Computer Adapter (NALLY side)
 │   └── api/
 │       └── openapi.yaml               # Phase 3: Machine & Execution contract (Bearer, 501 stubs)
 ├── nallputer/             # Implementation (Phase 6+)
@@ -107,9 +108,9 @@ All Phase 1 documents separate three evidence tiers:
 
 This makes architecture decisions traceable and defensible.
 
-## Next: Phase 5 — NALLY Integration
+## Next: Phase 6 — MVP v0.1
 
-Phase 4 is now locked (`005` workspace + `006` runtime + `007` security + `008` lifecycle). Two deferred choices are now settled: **cgroup v2 unified** (006) and **userspace egress proxy** with `HTTP_PROXY` injection + deny-by-default allowlist (007). NALLY integration will define the private-network client (Bearer, polling, idempotency, `GET /v1/machine` preflight, reconnect on `uptime_sec` reset).
+Phase 5 is now locked (`009` Computer Adapter). NALLY now has a provider-neutral driver: `getMachine()` preflight → `getHealth()` → `exec()`/`poll_run()`/`cancel_run()` + `file_*` + `sync()`, with idempotency, `policy_denied` taxonomy, and `uptime_sec`-based reconnect. **Do not touch `nallputer/` until Phase 6** — next we build the disposable runtime underneath the frozen contract (004 sync engine + 005 workspace + 006 cgroup v2 + 007 egress proxy + 008 lifecycle).
 
 ## License
 
