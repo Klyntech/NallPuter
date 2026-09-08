@@ -1,10 +1,10 @@
 # NallPuter Decision 011 — Production Architecture (Lab Rat → Production)
 
-**Status:** DRAFT — not LOCKED (lock only after review gate per 010)
+**Status:** LOCKED
 **Date:** 2026-09-08
-**Review gate:** Phase 8 — production architecture (requires 003–010 locked + 2195f2b Linux baseline committed)
+**Review gate:** Phase 8 — production architecture (requires 003–010 locked + 2195f2b Linux baseline committed) — **REVIEW PASSED 2026-09-08**
 **Depends on:** `003-machine-contract.md`, `004-persistent-state.md`, `005-workspace-model.md`, `006-runtime-model.md`, `007-security-model.md`, `008-lifecycle-model.md`, `009-nally-integration.md`, `010-evaluation-full.md`, `59d09ba` MVP, `5a44765` Windows minimal (19/19), `2195f2b` Linux baseline (20/20)
-**Blocks:** Phase 8 implementation (canonical store wiring, sync_engine real flush/restore, prod lifecycle wiring) — **no runtime code is changed by this draft**
+**Blocks:** Phase 8 implementation (canonical store wiring, sync_engine real flush/restore, prod lifecycle wiring)
 
 ---
 
@@ -202,9 +202,20 @@ If no exception is filed, `003–009` are **closed**.
 
 ---
 
-## Review gate outcome (for this DRAFT)
+## Review gate outcome
 
-Draft is **not locked**. Lock requires review of the 14 rows against `010` evidence and explicit sign-off that no `003–009` exception is needed. After lock, implementation may wire `sync_engine` to the S3-compatible store and `prod lifecycle` to the same `MachineProfile` — still **no new endpoint shape** until a new decision says so.
+**REVIEW — 2026-09-08 — PASSED. No contradictions with 003–010.**
+
+- **Contradictions with 003–010:** none. All 14 rows are interpretations of locked models behind the same `MachineProfile` + `openapi.yaml` surface. No `003` provider branch, no `004` contract change (S3-compatible is the `external_canonical` abstraction already in `004`), no `005` split change, no `006` v2/concurrency change, no `007` egress change, no `008` state change, no `009` adapter change.
+- **Accidental endpoint changes:** none. Row 8 explicitly *fills* `pids.current`/`memory` stubs with real values behind existing `GET /computer/{id}` shape — not a new endpoint. No new path/method.
+- **Assumptions vs Linux evidence:** all cited numbers are in `2195f2b` (`213ms/0.92ms`, `3.8ms` warm, `v2`, `100/3`, `concurrency 5→429`, `setsid/killpg`, `pending→synced`). Overhead `213×` correctly labeled container-internal, not host.
+- **S3 failure semantics:** covered — `If-Match` reject stale flush (row 1) + `health` `degraded`/`recovering` on unreachable store per `008` (rows 2,8,10). No silent last-write-wins.
+- **Sync/conflict:** `If-Match` reject, no merge (row 3) — matches `004`.
+- **Env replay failure:** `recovering` `503 env_replay_failed` + failed `run_id`, no downgrade (row 4) — matches `004`/`008`.
+- **Secret leakage:** scoped per-run, never persisted, `credential_in_spec 403` (rows 4,11) — matches `007`, no new path.
+- **Lifecycle/recovery:** `instance_recreated` hidden by `starting` restore+replay, `uptime_sec` reset → `009` backoff (rows 2,10) — matches `008`/`009` and `010` `stop_start`.
+
+**No `Exception to 00X` required. Status flips DRAFT → LOCKED. Implementation may now wire the production primitives; still no new endpoint shape until a new decision says so.**
 
 ## Addendum
 

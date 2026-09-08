@@ -33,10 +33,10 @@ NallPuter (computer)
 | 5 | NALLY integration — Computer Adapter | ✅ `docs/decisions/009-nally-integration.md` |
 | 6 | MVP v0.1 — disposable runtime + sync engine | ✅ `nallputer/` (FastAPI, cgroup v2, pgid, egress proxy, sync stub) |
 | 7 | Evaluation — minimal gate | ✅ LOCKED — 19/19 PASS at `5a44765` (`tests/results/REPORT.md`, Windows/TestClient, measure-only) |
-| 7-full | Evaluation — Linux CI harness | 🟡 scaffolded at `e3d3891` (`tests/docker/`, `Makefile eval-linux`, `010`) → CI green `34272443007` (19/19 on ubuntu-latest) · Linux baseline `tests/results/linux/REPORT.md` ⏳ not yet committed |
-| 8 | Production architecture | ⬜ **BLOCKED** (awaiting Linux baseline per 010) |
+| 7-full | Evaluation — Linux CI harness | ✅ LOCKED — 20/20 PASS at `2195f2b` (`tests/results/linux/` 20 JSON + `junit.xml`/`pytest.log`/`REPORT.md`, `cgroup v2` `100`/`3`, `concurrency 5→429`, `setsid`/`killpg`) — CI green |
+| 8 | Production architecture | 🟡 DRAFT `011` → **LOCKED** `e82f9e4` review passed; implementation next (S3-compatible canonical, hard `5→429`, `900s` default) |
 
-Execution sequence: `2a ─┐ → 3 → 4 → 5 → 6 → 7 → 8` and `2b ─┘` (both block 3). Render is Lab Rat #1; external store is canonical (004). `7` is locked; `7-full` is scaffolded (010) and running in CI; `8` is blocked until Linux baseline is committed.
+Execution sequence: `2a ─┐ → 3 → 4 → 5 → 6 → 7 → 8` and `2b ─┘` (both block 3). Render is Lab Rat #1; external store is canonical (004). `7` + `7-full` are locked; `011` is now the authority for Phase 8 (no `003–009` reopen without `Exception`).
 
 ## Repository structure
 
@@ -51,7 +51,7 @@ NallPuter/
 │   │   ├── e2b-daytona-modal.md
 │   │   ├── requirements.md
 │   │   └── _evidence-index.md
-│   ├── decisions/         # Phases 2 + 2a + 2b + 4 + 5: locked decisions
+│   ├── decisions/         # Phases 2 + 2a + 2b + 4 + 5 + 8: locked decisions
 │   │   ├── 001-computer-model.md        # + addendum 2026-09-07 (003/004)
 │   │   ├── 002-resource-model.md        # + addendum 2026-09-07 (003/004)
 │   │   ├── 003-machine-contract.md      # 2a: provider-neutral MachineProfile
@@ -60,31 +60,34 @@ NallPuter/
 │   │   ├── 006-runtime-model.md         # Phase 4: cgroup v2, Docker, process groups
 │   │   ├── 007-security-model.md        # Phase 4: FS+net, credential isolation, audit
 │   │   ├── 008-lifecycle-model.md       # Phase 4: computer+run state machines, auto-stop
-│   │   └── 009-nally-integration.md     # Phase 5: Computer Adapter (NALLY side)
+│   │   ├── 009-nally-integration.md     # Phase 5: Computer Adapter (NALLY side)
+│   │   ├── 010-evaluation-full.md       # Phase 7-full: Linux/Docker plan (LOCKED)
+│   │   └── 011-production-architecture.md # Phase 8: Lab Rat → production (LOCKED 2026-09-08)
 │   └── api/
 │       └── openapi.yaml               # Phase 3: Machine & Execution contract (Bearer, 501 stubs)
 ├── nallputer/             # Phase 6: MVP runtime (FastAPI + workspace jail + pgid + sync stub)
 │   ├── Dockerfile               # tini + cgroup v2 + workspace
 │   ├── pyproject.toml
 │   └── nallputer/app,core,routers
-├── tests/                 # Phase 7: minimal ✅ 19/19 + Linux CI harness 🟡
+├── tests/                 # Phase 7: minimal ✅ 19/19 + Linux ✅ 20/20 (measure-only)
 │   ├── conftest.py              # TestClient + computer_id + exec_and_poll
 │   ├── test_latency.py, test_startup.py, test_lifecycle.py
 │   ├── test_isolation.py, test_persistence.py, test_output.py
-│   ├── test_linux_cgroup.py     # Linux-only (skipped on Windows)
-│   ├── docker/                  # Phase 7-full scaffold (e3d3891)
+│   ├── test_linux_cgroup.py     # Linux-only (now PASS on CI: v2 + 429)
+│   ├── docker/                  # Phase 7-full harness (e3d3891, --no-cache)
 │   │   ├── Dockerfile.eval
-│   │   ├── docker-compose.eval.yml
-│   │   ├── collect.py
+│   │   ├── docker-compose.eval.yml # cpus 0.5/mem 512m/pids 100, user 0:0
+│   │   ├── collect.py           # Windows + Linux evidence table
 │   │   └── run.sh
 │   └── results/
-│       ├── REPORT.md            # Windows minimal baseline (5a44765) — committed
-│       ├── *.json               # measure-only artifacts (14d CI retention)
-│       └── linux/
-│           ├── .gitkeep         # awaiting first committed Linux REPORT
-│           └── REPORT.md        # ⏳ not yet committed (CI green 34272443007)
+│       ├── REPORT.md            # Windows minimal baseline (5a44765) — 19/19
+│       ├── *.json               # Windows measure-only
+│       └── linux/               # Linux baseline (2195f2b) — committed 20/20
+│           ├── REPORT.md        # cgroup v2, 100/3, 213ms, 5→429
+│           ├── *.json, junit.xml, pytest.log
+│           └── (was .gitkeep)
 ├── .github/
-│   └── workflows/ci.yml         # eval-minimal + eval-linux (push master+PR+dispatch, pip cache, 14d, informational)
+│   └── workflows/ci.yml         # eval-minimal + eval-linux (push master+PR+dispatch, pip cache, 14d, informational, green 34274399240)
 ├── render.yaml            # Render private service (ephemeral) + token
 ├── Makefile               # eval / eval-linux / docker-eval
 ├── .env.example
@@ -132,9 +135,9 @@ All Phase 1 documents separate three evidence tiers:
 
 This makes architecture decisions traceable and defensible.
 
-## Next: Phase 7-full → Phase 8 (BLOCKED)
+## Next: Phase 8 implementation (011 LOCKED)
 
-Phase 7 minimal is **LOCKED 19/19 PASS** at `5a44765` (`tests/results/REPORT.md`, Windows/TestClient, measure-only). Phase 7-full is **scaffolded** at `e3d3891` (`tests/docker/`, `Makefile eval-linux`, `010`) and **CI is green** (`34272443007` — 19/19 on ubuntu-latest, Docker `cgroup v2`). **Linux baseline `tests/results/linux/REPORT.md` is not yet committed** — that separate evidence commit will unlock Phase 8 per `010`. `pids.max` path discovery remains a harness refinement (`collect.py`), not a runtime failure. **Do not modify runtime, contracts 003–009, 010, or the harness before that baseline.** Next full gate (Docker Linux) will measure true `cgroup v2`, `pids.current`, 5-way concurrency `429`, `setsid`/`killpg` vs `taskkill`, env replay, private-network latency, then drive Phase 8.
+Phase 7 is **LOCKED** — minimal `5a44765` 19/19 + Linux `2195f2b` 20/20 (`cgroup v2`, `100`/`3`, `5→429`, `213ms`/`0.92ms`) — and `011` is **LOCKED** after review (no `003–009` contradictions, no endpoint changes, S3-compatible canonical, hard `5→429`, `900s` default). **011 is now the authority for Phase 8.** Next: slice `011` into `8A` Persistence adapter (S3-compatible, `manifest.json`, `ETag`/`If-Match`), `8B` Sync engine (debounce `3s`, flush `10s`, restore, `degraded`), `8C` Env reconstruct (`environment.yaml/lock`, `env_replay_failed`), `8D` Security (`proxy`+allowlist+audit), `8E` Lifecycle/recovery (`uptime_sec` reset), `8F` Observability (`pids.current`/`sync`/`audit`). **NALLY's contract does not change** — `GET /v1/machine`/`health`/`computer`/`exec`/`files` stay identical (`openapi.yaml` frozen).
 
 ## License
 
