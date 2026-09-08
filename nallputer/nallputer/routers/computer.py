@@ -28,10 +28,22 @@ class CreateComputerBody(BaseModel):
 
 def _computer_to_dict(c: Computer) -> dict:
     from nallputer.core.workspace import workspace_usage_gb, disk_usage_gb
+    from nallputer.core.metrics import get_pids, get_memory_mb, get_cpu_millicores
+
     try:
         w_used = workspace_usage_gb()
     except Exception:
         w_used = 0
+    # 8F: real cgroup metrics behind existing shape (no new endpoint)
+    pids_current, pids_max = get_pids()
+    # On Windows, pids_current is None -> keep 0 as informational stub (was 0 before 8F)
+    pids_used = pids_current if pids_current is not None else 0
+    mem_mb = get_memory_mb()
+    if mem_mb is None:
+        mem_mb = 0
+    cpu_m = get_cpu_millicores()
+    if cpu_m is None:
+        cpu_m = 0
     return {
         "computer_id": c.computer_id,
         "state": c.state,
@@ -39,9 +51,9 @@ def _computer_to_dict(c: Computer) -> dict:
         "resources_usage": {
             "workspace_used_gb": round(w_used, 4),
             "disk_used_gb": round(disk_usage_gb(), 4),
-            "pids_used": 0,  # MVP: not wiring pids.current yet; stub
-            "memory_mb": 0,
-            "cpu_millicores": 0,
+            "pids_used": pids_used,
+            "memory_mb": mem_mb,
+            "cpu_millicores": cpu_m,
         },
         "sync_state": {
             "sync_state": c.sync_state.sync_state,
