@@ -74,17 +74,40 @@ class S3Persistence(Persistence):
         except self.s3.exceptions.NoSuchKey:  # type: ignore[attr-defined]
             return None, None
 
+    def _ensure_bucket(self) -> None:
+        try:
+            self.s3.head_bucket(Bucket=self.bucket)
+        except ClientError as e:
+            code = e.response.get("Error", {}).get("Code")
+            if code in ("404", "NoSuchBucket", "NoSuchKey"):
+                try:
+                    kwargs: dict = {"Bucket": self.bucket}
+                    # Region handling: us-east-1 has no LocationConstraint
+                    region = getattr(self.s3, "meta", {}).get("region_name") if hasattr(self.s3, "meta") else None
+                    if region and region != "us-east-1":
+                        kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
+                    self.s3.create_bucket(**kwargs)
+                except ClientError:
+                    pass
+            else:
+                # Re-raise if not bucket missing
+                pass
+
     def put(self, key: str, data: bytes, if_match: Optional[str] = None) -> str:
         fk = self._full_key(key)
         # Try conditional write if IfMatch supported
         # boto3 S3 put_object supports IfMatch param (Conditional Writes)
         # If endpoint doesn't support it, fallback to read-then-put with check.
+        # Also handle NoSuchBucket by auto-creating bucket (for moto/localstack)
+        def _do_put(if_match_val: Optional[str] = None):
+            if if_match_val is not None:
+                return self.s3.put_object(Bucket=self.bucket, Key=fk, Body=data, IfMatch=if_match_val)
+            return self.s3.put_object(Bucket=self.bucket, Key=fk, Body=data)
+
         try:
             if if_match is not None:
-                # Need current etag to compare if server doesn't do it
-                # Try server-side IfMatch first
                 try:
-                    resp = self.s3.put_object(Bucket=self.bucket, Key=fk, Body=data, IfMatch=if_match)
+                    resp = _do_put(if_match)
                     etag = resp.get("ETag", "").strip('"')
                     if not etag:
                         etag = hashlib.md5(data).hexdigest()
@@ -92,24 +115,33 @@ class S3Persistence(Persistence):
                 except ClientError as e:
                     err = e.response.get("Error", {})
                     code = err.get("Code")
+                    if code == "NoSuchBucket":
+                        self._ensure_bucket()
+                        # Retry once
+                        resp = _do_put(if_match)
+                        etag = resp.get("ETag", "").strip('"')
+                        return etag or hashlib.md5(data).hexdigest()
                     # Conditional check failed or not supported
                     if code in ("PreconditionFailed", "412", "ConditionalRequestConflict"):
-                        # Fetch actual etag for ConflictError
                         _, actual = self.get(key)
                         raise ConflictError(key, if_match, actual) from e
-                    # If IfMatch not supported (400 Bad Request), fall through to client-side check
                     if code not in ("400", "NotImplemented", "InvalidRequest"):
                         raise
-                    # Fall through to client-side check
                     _, actual = self.get(key)
                     if actual != if_match:
                         raise ConflictError(key, if_match, actual) from e
-                    # If matches, do unconditional put
-                    resp = self.s3.put_object(Bucket=self.bucket, Key=fk, Body=data)
+                    resp = _do_put(None)
                     etag = resp.get("ETag", "").strip('"')
                     return etag or hashlib.md5(data).hexdigest()
             else:
-                resp = self.s3.put_object(Bucket=self.bucket, Key=fk, Body=data)
+                try:
+                    resp = _do_put(None)
+                except ClientError as e:
+                    if e.response.get("Error", {}).get("Code") == "NoSuchBucket":
+                        self._ensure_bucket()
+                        resp = _do_put(None)
+                    else:
+                        raise
                 etag = resp.get("ETag", "").strip('"')
                 return etag or hashlib.md5(data).hexdigest()
         except ConflictError:

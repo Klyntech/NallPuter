@@ -94,12 +94,25 @@ def start_computer(computer_id: str, _auth=Depends(require_auth)):
         raise HTTPException(status_code=404, detail={"code":"not_found","message":"computer not found"})
     if c.state in ("running","idle"):
         raise HTTPException(status_code=409, detail={"code":"already_running","message":"computer already running"})
-    # 008: re-fetch manifest + restore workspace + replay env -> running (MVP: just flip)
+    # 008 + 8B: restore from canonical (manifest + workspace) via sync_engine
+    from nallputer.core.sync import restore as sync_restore
+
+    s = sync_restore(computer_id)
+    if s.sync_state in ("degraded", "env_replay_failed"):
+        # Keep recovering semantics per 008: if restore fails, mark recovering
+        c.state = "recovering"
+        c.sync_state.sync_state = s.sync_state
+        c.sync_state.last_error = s.last_error
+        c.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=503, content=_computer_to_dict(c))
     c.state = "running"
     c.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    # simulate restore flush
-    s = get_sync()
     c.sync_state.sync_state = s.sync_state
+    c.sync_state.last_sync_rev = s.last_sync_rev
+    c.sync_state.last_sync_at = s.last_sync_at
+    c.sync_state.last_error = s.last_error
     return _computer_to_dict(c)
 
 @router.post("/computer/{computer_id}/stop")
@@ -109,11 +122,21 @@ def stop_computer(computer_id: str, _auth=Depends(require_auth)):
         raise HTTPException(status_code=404, detail={"code":"not_found","message":"computer not found"})
     if c.state == "stopped":
         return _computer_to_dict(c)
-    # 008: SIGTERM flush up to 10s
-    flush()
+    # 008 + 8B: SIGTERM flush up to 10s — manifest-last via persistence adapter
+    s = flush(computer_id)
     c.state = "stopped"
     c.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    # If flush degraded (If-Match conflict), mark recovering not synced
+    if s.sync_state == "degraded":
+        c.state = "recovering"
+        c.sync_state.sync_state = "degraded"
+        c.sync_state.last_error = s.last_error
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=503, content=_computer_to_dict(c))
     c.sync_state.sync_state = "synced"
+    c.sync_state.last_sync_rev = s.last_sync_rev
+    c.sync_state.last_sync_at = s.last_sync_at
     return _computer_to_dict(c)
 
 @router.post("/computer/{computer_id}/destroy")
@@ -136,7 +159,7 @@ def get_computer_sync(computer_id: str, _auth=Depends(require_auth)):
     c = computers.get(computer_id) or (get_or_create_default(machine_profile()) if computer_id==default_computer_id else None)
     if not c:
         raise HTTPException(status_code=404, detail={"code":"not_found","message":"computer not found"})
-    s = get_sync()
+    s = get_sync(computer_id)
     return {"sync_state": s.sync_state, "last_sync_rev": s.last_sync_rev, "last_sync_at": s.last_sync_at, "dirty_count": s.dirty_count, "dirty_files": s.dirty_files, "last_error": s.last_error}
 
 @router.post("/computer/{computer_id}/sync")
@@ -144,7 +167,18 @@ def post_computer_sync(computer_id: str, _auth=Depends(require_auth)):
     c = computers.get(computer_id) or (get_or_create_default(machine_profile()) if computer_id==default_computer_id else None)
     if not c:
         raise HTTPException(status_code=404, detail={"code":"not_found","message":"computer not found"})
-    s = flush()
+    s = flush(computer_id)
+    # Keep computer's sync_state in sync with engine
+    c.sync_state.sync_state = s.sync_state
+    c.sync_state.last_sync_rev = s.last_sync_rev
+    c.sync_state.last_sync_at = s.last_sync_at
+    c.sync_state.last_error = s.last_error
+    c.sync_state.dirty_count = s.dirty_count
+    c.sync_state.dirty_files = s.dirty_files
+    if s.sync_state == "degraded":
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=503, content={"sync_state": s.sync_state, "last_sync_rev": s.last_sync_rev, "last_sync_at": s.last_sync_at, "dirty_count": s.dirty_count, "dirty_files": s.dirty_files, "last_error": s.last_error})
     return {"sync_state": s.sync_state, "last_sync_rev": s.last_sync_rev, "last_sync_at": s.last_sync_at, "dirty_count": s.dirty_count, "dirty_files": s.dirty_files, "last_error": s.last_error}
 
 @router.post("/computer/{computer_id}/pause")

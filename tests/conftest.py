@@ -94,3 +94,36 @@ def write_result(name: str, payload: dict):
     path.write_text(__import__("json").dumps(payload, indent=2), encoding="utf-8")
     # Also mirror to legacy path for backwards compat when not docker?
     # No — keep Windows baseline untouched when in Docker
+
+
+# 8B isolation: each test gets clean persistence + sync state (prevents S3 moto bucket leakage)
+@pytest.fixture(autouse=True)
+def _isolate_8b():
+    # Before each test, ensure clean state from previous test's S3 mock or degraded sync
+    try:
+        from nallputer.core.persistence.factory import reset_persistence
+        from nallputer.core import sync_engine
+
+        reset_persistence()
+        sync_engine.reset_for_tests()
+    except Exception:
+        pass
+    yield
+    try:
+        from nallputer.core.persistence.factory import reset_persistence
+        from nallputer.core import sync_engine
+
+        reset_persistence()
+        sync_engine.reset_for_tests()
+        # Also clear env that tests may have set for S3 mock
+        for k in list(os.environ.keys()):
+            if k.startswith("NALLPUTER_S3_"):
+                if k == "NALLPUTER_S3_BUCKET" and os.getenv(k) == "test-bucket-8a":
+                    os.environ.pop(k, None)
+                if k == "NALLPUTER_S3_ENDPOINT" and os.getenv(k) == "mock":
+                    os.environ.pop(k, None)
+        from nallputer.core.persistence.factory import reset_persistence as _rp
+
+        _rp()
+    except Exception:
+        pass

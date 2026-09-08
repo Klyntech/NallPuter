@@ -114,8 +114,8 @@ def create_exec(body: ExecCreate, authorization: str | None = Header(default=Non
 
     r = create_run(body.computer_id, body.command, cwd_resolved, body.timeout_sec, body.env, idempotency_key)
     audit({"computer_id": body.computer_id, "run_id": r.run_id, "decision":"allow","command": body.command[:200]})
-    # mark possible dirty pending: exec may mutate workspace; optimistic
-    sync = get_sync()
+    # 8B: sync_pending reflects per-computer dirty count (exec may have mutated workspace via FS watcher or explicit writes)
+    sync = get_sync(body.computer_id)
     r.sync_pending = sync.dirty_count > 0
     from fastapi.responses import JSONResponse
     return JSONResponse(status_code=201, content=_run_to_dict(r))
@@ -128,7 +128,7 @@ def get_exec(run_id: str, authorization: str | None = Header(default=None), curs
     if not r:
         raise HTTPException(status_code=404, detail={"code":"not_found","message":"run not found"})
     # TTL 24h eviction check would go here (MVP: no eviction)
-    sync = get_sync()
+    sync = get_sync(r.computer_id)
     r.sync_pending = sync.dirty_count > 0
     return _run_to_dict(r, cursor=cursor, limit=limit)
 

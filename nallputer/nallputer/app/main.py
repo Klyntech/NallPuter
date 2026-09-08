@@ -17,21 +17,30 @@ from nallputer.core.workspace import WORKSPACE_ROOT
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 004 restore+replay (MVP: ensure workspace dirs)
+    # 8B: on-start restore (manifest + workspace) per 004 + 011 row 2
     probe_cgroup()
     WORKSPACE_ROOT.mkdir(parents=True, exist_ok=True)
     for sub in ("projects","files","artifacts","tmp",".cache",".nallputer/state"):
         (WORKSPACE_ROOT / sub).mkdir(parents=True, exist_ok=True)
     # init default computer
     from nallputer.routers.machine import machine_profile
+
     get_or_create_default(machine_profile())
+    # 8B restore for default computer (best-effort, degraded on failure per 004)
+    try:
+        from nallputer.core.sync import restore
+
+        restore(default_computer_id)
+    except Exception:
+        pass
     # launch egress proxy stub (007) — binds 127.0.0.1:3128 and enforces allowlist; MVP is no-op but logs
     # we don't actually start a proxy process to keep MVP light; env HTTP_PROXY still injected per run
     yield
-    # 004 pre-stop flush is handled by lifespan shutdown? On SIGTERM FastAPI will exit; we flush sync
+    # 8B pre-stop flush (manifest-last, 10s SIGTERM window per 004) for default computer
     try:
         from nallputer.core.sync import flush
-        flush()
+
+        flush(default_computer_id)
     except Exception:
         pass
 

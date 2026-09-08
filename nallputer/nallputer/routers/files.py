@@ -168,11 +168,11 @@ def file_write(body: FileWriteRequest, authorization: str | None = Header(defaul
         raise HTTPException(status_code=403, detail={"code":"filesystem_denied","message":str(e)})
     except Exception as e:
         raise HTTPException(status_code=500, detail={"code":"write_failed","message":str(e)})
-    # sync dirty tracking: only if persistent path
+    # sync dirty tracking: only if persistent path (8B per-computer)
     from nallputer.core.workspace import is_ephemeral
     if not is_ephemeral(p):
-        mark_dirty(str(p))
-    sync = get_sync()
+        mark_dirty(str(p), cid=body.computer_id)
+    sync = get_sync(body.computer_id)
     audit({"computer_id":body.computer_id,"path":str(p),"decision":"allow","bytes":new_bytes})
     # environment spec hint — Windows uses backslashes, so normalize to forward slashes for check
     env_info = None
