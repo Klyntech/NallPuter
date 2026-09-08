@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: nallputer
+    runtime: docker
+    dockerfilePath: ./nallputer/Dockerfile
+    dockerContext: .
+    plan: starter
+    region: oregon
+    # Private service: only reachable via Render private networking from NALLY
+    # Set private service in dashboard (render.yaml privateService not yet public; configure manually)
+    envVars:
+      - key: NALLPUTER_TOKEN
+        sync: false  # set in dashboard, shared with NALLY
+      - key: NALLPUTER_PROVIDER
+        value: render
+      - key: NALLPUTER_RUNTIME
+        value: nallputer-0.1.0
+      - key: NALLPUTER_EGRESS_POLICY
+        value: deny-by-default
+      - key: NALLPUTER_EGRESS_ALLOWLIST
+        value: pypi.org,registry.npmjs.org,github.com
+      - key: NALLPUTER_WORKSPACE
+        value: /home/nally/workspace
+      - key: PYTHONUNBUFFERED
+        value: 1
+    healthCheckPath: /health
+    # Lab Rat cache mount — optional; if attached disk exists it is used as write-through cache behind canonical abstraction (004)
+    # disk:
+    #   name: nallputer-cache
+    #   mountPath: /mnt/nallputer-cache
+    #   sizeGB: 2

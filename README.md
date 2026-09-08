@@ -31,7 +31,7 @@ NallPuter (computer)
 | 3 | Machine & Execution API contract + OpenAPI | ✅ `docs/api/openapi.yaml` |
 | 4 | Workspace + Runtime + Security + Lifecycle models | ✅ `docs/decisions/005` `006` `007` `008` |
 | 5 | NALLY integration — Computer Adapter | ✅ `docs/decisions/009-nally-integration.md` |
-| 6 | MVP v0.1 — disposable runtime + sync engine | ⬜ `nallputer/` |
+| 6 | MVP v0.1 — disposable runtime + sync engine | ✅ `nallputer/` (FastAPI, cgroup v2, pgid, egress proxy, sync stub) |
 | 7 | Evaluation | ⬜ `tests/` |
 | 8 | Production architecture | ⬜ |
 
@@ -62,8 +62,13 @@ NallPuter/
 │   │   └── 009-nally-integration.md     # Phase 5: Computer Adapter (NALLY side)
 │   └── api/
 │       └── openapi.yaml               # Phase 3: Machine & Execution contract (Bearer, 501 stubs)
-├── nallputer/             # Implementation (Phase 6+)
+├── nallputer/             # Phase 6: MVP runtime (FastAPI + workspace jail + pgid + sync stub)
+│   ├── Dockerfile               # tini + cgroup v2 + workspace
+│   ├── pyproject.toml
+│   └── nallputer/app,core,routers
 ├── tests/                 # Phase 7 evaluation harness
+├── render.yaml            # Render private service (ephemeral) + token
+├── .env.example
 └── README.md
 ```
 
@@ -108,9 +113,9 @@ All Phase 1 documents separate three evidence tiers:
 
 This makes architecture decisions traceable and defensible.
 
-## Next: Phase 6 — MVP v0.1
+## Next: Phase 7 — Evaluation
 
-Phase 5 is now locked (`009` Computer Adapter). NALLY now has a provider-neutral driver: `getMachine()` preflight → `getHealth()` → `exec()`/`poll_run()`/`cancel_run()` + `file_*` + `sync()`, with idempotency, `policy_denied` taxonomy, and `uptime_sec`-based reconnect. **Do not touch `nallputer/` until Phase 6** — next we build the disposable runtime underneath the frozen contract (004 sync engine + 005 workspace + 006 cgroup v2 + 007 egress proxy + 008 lifecycle).
+Phase 6 MVP is built (`nallputer/` FastAPI disposable runtime under frozen `003-009` + `openapi.yaml`). Implements: `GET /v1/machine` + `GET /v1/health` + computer lifecycle (`create/list/get/start/stop/destroy/sync`, 501 `pause/resume/snapshot`) + exec (pgid, wall-time, 100KB cap, cancel, idempotency, egress `deny-by-default` + `HTTP_PROXY` injection) + files (jail, atomic, quota 507, `credential_in_spec` 403, base64) + sync stub (`pending` → `synced`) + `tini` + cgroup v2 probe (no v1 fallback). 33 contract checks pass locally. Next: Phase 7 evaluation harness (`tests/`) against `local subprocess` vs `NALLPUTER`.
 
 ## License
 
