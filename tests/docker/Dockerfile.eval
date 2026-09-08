@@ -20,7 +20,7 @@ COPY docs ./docs
 COPY .env.example .env.example
 
 RUN pip install --no-cache-dir -e ./nallputer 2>&1 | tail -n 5
-RUN pip install --no-cache-dir pytest httpx fastapi pydantic pydantic-settings python-multipart --quiet
+RUN pip install --no-cache-dir pytest httpx fastapi pydantic pydantic-settings python-multipart boto3 "moto[s3]" --quiet
 
 ENV HOME=/home/nally \
     PYTHONUNBUFFERED=1 \

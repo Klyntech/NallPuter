@@ -35,6 +35,15 @@ CANONICAL_ROOT = Path(os.getenv("NALLPUTER_CANONICAL", str(WORKSPACE_ROOT.parent
 # 004 Lab Rat cache mount
 CACHE_MOUNT = Path(os.getenv("NALLPUTER_CACHE_MOUNT", "/mnt/nallputer-cache"))
 
+# 011 8A — S3-compatible canonical (provider is deployment config, not architecture)
+NALLPUTER_S3_BUCKET = os.getenv("NALLPUTER_S3_BUCKET", "").strip()
+NALLPUTER_S3_ENDPOINT = os.getenv("NALLPUTER_S3_ENDPOINT", "").strip()
+NALLPUTER_S3_REGION = os.getenv("NALLPUTER_S3_REGION", "").strip()
+NALLPUTER_S3_ACCESS_KEY = os.getenv("NALLPUTER_S3_ACCESS_KEY", "").strip()
+NALLPUTER_S3_SECRET_KEY = os.getenv("NALLPUTER_S3_SECRET_KEY", "").strip()
+NALLPUTER_S3_PREFIX = os.getenv("NALLPUTER_S3_PREFIX", "").strip()
+# When S3_BUCKET is set and ENDPOINT is "mock", factory will use moto in tests (no real creds)
+
 BOOT_TS = time.monotonic()
 BOOT_WALL = time.time()
 
