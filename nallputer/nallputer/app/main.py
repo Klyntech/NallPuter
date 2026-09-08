@@ -27,10 +27,28 @@ async def lifespan(app: FastAPI):
 
     get_or_create_default(machine_profile())
     # 8B restore for default computer (best-effort, degraded on failure per 004)
+    # 8C env replay after restore (011 row 4) — never mutate yaml, 503 on failure
     try:
         from nallputer.core.sync import restore
 
         restore(default_computer_id)
+        try:
+            from nallputer.core.env_reconstruct import replay, EnvReplayError
+            from nallputer.core.sync_engine import get_sync_state as _get_ss
+
+            replay()
+        except EnvReplayError as e:
+            # Mark degraded per 004/008: env_replay_failed
+            from nallputer.core.sync_engine import _sync_states as _ss_map
+            from nallputer.core.sync_engine import SyncState as _SS
+
+            ss = _ss_map.get(default_computer_id)
+            if ss is not None:
+                ss.sync_state = "env_replay_failed"
+                ss.last_error = str(e)[:500]
+            print(f"[env_reconstruct] replay failed for {default_computer_id}: {e}", flush=True)
+        except Exception as e:
+            print(f"[env_reconstruct] unexpected replay error: {e}", flush=True)
     except Exception:
         pass
     # launch egress proxy stub (007) — binds 127.0.0.1:3128 and enforces allowlist; MVP is no-op but logs

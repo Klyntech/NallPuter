@@ -107,6 +107,45 @@ def start_computer(computer_id: str, _auth=Depends(require_auth)):
         from fastapi.responses import JSONResponse
 
         return JSONResponse(status_code=503, content=_computer_to_dict(c))
+    # 8C: env replay after restore (never mutate yaml, 503 on failure)
+    try:
+        from nallputer.core.env_reconstruct import replay, EnvReplayError
+        from nallputer.core.sync_engine import get_sync_state as _get_ss
+
+        replay()
+        # Replay success: sync state may have been updated via file writes, but ensure computer reflects it
+        ss = _get_ss(computer_id)
+        c.sync_state.sync_state = ss.sync_state
+        c.sync_state.last_sync_rev = ss.last_sync_rev
+        c.sync_state.last_sync_at = ss.last_sync_at
+        c.sync_state.last_error = ss.last_error
+    except EnvReplayError as e:
+        c.state = "recovering"
+        c.sync_state.sync_state = "env_replay_failed"
+        c.sync_state.last_error = str(e)[:500]
+        c.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        # Also mark sync_engine state
+        try:
+            from nallputer.core.sync_engine import _sync_states as _ss_map
+
+            ss = _ss_map.get(computer_id)
+            if ss is not None:
+                ss.sync_state = "env_replay_failed"
+                ss.last_error = str(e)[:500]
+        except Exception:
+            pass
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=503, content=_computer_to_dict(c))
+    except Exception as e:
+        # Unexpected replay error -> degraded
+        c.state = "recovering"
+        c.sync_state.sync_state = "degraded"
+        c.sync_state.last_error = str(e)[:500]
+        c.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(status_code=503, content=_computer_to_dict(c))
     c.state = "running"
     c.updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     c.sync_state.sync_state = s.sync_state
