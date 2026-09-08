@@ -77,10 +77,20 @@ def exec_and_poll(client: TestClient, cid: str, command: str, timeout_sec: int |
     return client.get(f"/v1/exec/{rid}", headers=AUTH).json()
 
 # Results writer — measure-only, not a gate
+# When running inside Docker (NALLPUTER_PROVIDER=docker), write to linux subdir so host's Windows baseline is preserved
 RESULTS_DIR = ROOT / "tests" / "results"
-RESULTS_DIR.mkdir(exist_ok=True)
+LINUX_RESULTS_DIR = RESULTS_DIR / "linux"
+if os.getenv("NALLPUTER_PROVIDER") == "docker":
+    LINUX_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    _active_results_dir = LINUX_RESULTS_DIR
+else:
+    RESULTS_DIR.mkdir(exist_ok=True)
+    _active_results_dir = RESULTS_DIR
 
 def write_result(name: str, payload: dict):
-    path = RESULTS_DIR / f"{name}.json"
+    # Write to active dir; on Docker this is linux/, on host this is results/
+    path = _active_results_dir / f"{name}.json"
     payload["ts"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     path.write_text(__import__("json").dumps(payload, indent=2), encoding="utf-8")
+    # Also mirror to legacy path for backwards compat when not docker?
+    # No — keep Windows baseline untouched when in Docker
