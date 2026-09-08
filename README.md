@@ -32,10 +32,11 @@ NallPuter (computer)
 | 4 | Workspace + Runtime + Security + Lifecycle models | ✅ `docs/decisions/005` `006` `007` `008` |
 | 5 | NALLY integration — Computer Adapter | ✅ `docs/decisions/009-nally-integration.md` |
 | 6 | MVP v0.1 — disposable runtime + sync engine | ✅ `nallputer/` (FastAPI, cgroup v2, pgid, egress proxy, sync stub) |
-| 7 | Evaluation — minimal gate | ✅ 19/19 `tests/` (latency, startup, timeout/cancel, isolation/egress, persistence/sync, output) |
-| 8 | Production architecture | ⬜ |
+| 7 | Evaluation — minimal gate | ✅ LOCKED — 19/19 PASS at `5a44765` (`tests/results/REPORT.md`, Windows/TestClient, measure-only) |
+| 7-full | Evaluation — Linux CI harness | 🟡 scaffolded at `e3d3891` (`tests/docker/`, `Makefile eval-linux`, `010`) → CI green `34272443007` (19/19 on ubuntu-latest) · Linux baseline `tests/results/linux/REPORT.md` ⏳ not yet committed |
+| 8 | Production architecture | ⬜ **BLOCKED** (awaiting Linux baseline per 010) |
 
-Execution sequence: `2a ─┐ → 3 → 4 → 5 → 6 → 7 → 8` and `2b ─┘` (both block 3). Render is Lab Rat #1; external store is canonical (004).
+Execution sequence: `2a ─┐ → 3 → 4 → 5 → 6 → 7 → 8` and `2b ─┘` (both block 3). Render is Lab Rat #1; external store is canonical (004). `7` is locked; `7-full` is scaffolded (010) and running in CI; `8` is blocked until Linux baseline is committed.
 
 ## Repository structure
 
@@ -66,12 +67,26 @@ NallPuter/
 │   ├── Dockerfile               # tini + cgroup v2 + workspace
 │   ├── pyproject.toml
 │   └── nallputer/app,core,routers
-├── tests/                 # Phase 7 minimal harness (19/19 PASS, measure-only)
+├── tests/                 # Phase 7: minimal ✅ 19/19 + Linux CI harness 🟡
 │   ├── conftest.py              # TestClient + computer_id + exec_and_poll
 │   ├── test_latency.py, test_startup.py, test_lifecycle.py
 │   ├── test_isolation.py, test_persistence.py, test_output.py
-│   └── results/REPORT.md + *.json (measure-only, no threshold gate)
+│   ├── test_linux_cgroup.py     # Linux-only (skipped on Windows)
+│   ├── docker/                  # Phase 7-full scaffold (e3d3891)
+│   │   ├── Dockerfile.eval
+│   │   ├── docker-compose.eval.yml
+│   │   ├── collect.py
+│   │   └── run.sh
+│   └── results/
+│       ├── REPORT.md            # Windows minimal baseline (5a44765) — committed
+│       ├── *.json               # measure-only artifacts (14d CI retention)
+│       └── linux/
+│           ├── .gitkeep         # awaiting first committed Linux REPORT
+│           └── REPORT.md        # ⏳ not yet committed (CI green 34272443007)
+├── .github/
+│   └── workflows/ci.yml         # eval-minimal + eval-linux (push master+PR+dispatch, pip cache, 14d, informational)
 ├── render.yaml            # Render private service (ephemeral) + token
+├── Makefile               # eval / eval-linux / docker-eval
 ├── .env.example
 └── README.md
 ```
@@ -117,9 +132,9 @@ All Phase 1 documents separate three evidence tiers:
 
 This makes architecture decisions traceable and defensible.
 
-## Next: Phase 7-full → Phase 8 Production
+## Next: Phase 7-full → Phase 8 (BLOCKED)
 
-Phase 7 minimal is **MEASURED 19/19 PASS** (measure-only, no Docker). Results in `tests/results/REPORT.md`: latency `304ms` vs `87ms` baseline, warm `17ms`/cold `13ms`, `timed_out`/`cancelled` correct, jail/egress/credential `403` correct, `write→pending→synced` + `stop→start` persistence correct, empty/truncation/pagination correct (Windows informational). Fixes: egress default `pypi.org...`, Windows `taskkill` tree-kill, backslash-normalized `environment.yaml` hint, cross-platform empty-output. **Do not modify runtime now** — evidence drives Phase 8. Next full gate needs Docker Linux for true cgroup `v2`, `pids.current`, concurrency 5x, env replay, private-network latency.
+Phase 7 minimal is **LOCKED 19/19 PASS** at `5a44765` (`tests/results/REPORT.md`, Windows/TestClient, measure-only). Phase 7-full is **scaffolded** at `e3d3891` (`tests/docker/`, `Makefile eval-linux`, `010`) and **CI is green** (`34272443007` — 19/19 on ubuntu-latest, Docker `cgroup v2`). **Linux baseline `tests/results/linux/REPORT.md` is not yet committed** — that separate evidence commit will unlock Phase 8 per `010`. `pids.max` path discovery remains a harness refinement (`collect.py`), not a runtime failure. **Do not modify runtime, contracts 003–009, 010, or the harness before that baseline.** Next full gate (Docker Linux) will measure true `cgroup v2`, `pids.current`, 5-way concurrency `429`, `setsid`/`killpg` vs `taskkill`, env replay, private-network latency, then drive Phase 8.
 
 ## License
 
