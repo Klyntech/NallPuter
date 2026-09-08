@@ -51,9 +51,23 @@ async def lifespan(app: FastAPI):
             print(f"[env_reconstruct] unexpected replay error: {e}", flush=True)
     except Exception:
         pass
-    # launch egress proxy stub (007) — binds 127.0.0.1:3128 and enforces allowlist; MVP is no-op but logs
-    # we don't actually start a proxy process to keep MVP light; env HTTP_PROXY still injected per run
+    # 8D: start egress proxy (127.0.0.1:3128) if deny-by-default — real enforcement, not just env var
+    try:
+        from nallputer.app.config import NALLPUTER_EGRESS_POLICY
+        from nallputer.core.egress_proxy import start_proxy
+
+        if NALLPUTER_EGRESS_POLICY == "deny-by-default":
+            start_proxy()
+    except Exception as e:
+        print(f"[egress_proxy] start failed: {e}", flush=True)
     yield
+    # 8D: stop proxy
+    try:
+        from nallputer.core.egress_proxy import stop_proxy
+
+        stop_proxy()
+    except Exception:
+        pass
     # 8B pre-stop flush (manifest-last, 10s SIGTERM window per 004) for default computer
     try:
         from nallputer.core.sync import flush
