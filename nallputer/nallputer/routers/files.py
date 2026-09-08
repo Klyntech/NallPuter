@@ -174,9 +174,10 @@ def file_write(body: FileWriteRequest, authorization: str | None = Header(defaul
         mark_dirty(str(p))
     sync = get_sync()
     audit({"computer_id":body.computer_id,"path":str(p),"decision":"allow","bytes":new_bytes})
-    # environment spec hint
+    # environment spec hint — Windows uses backslashes, so normalize to forward slashes for check
     env_info = None
-    if ".nallputer/state/environment" in str(p):
+    norm = str(p).replace("\\", "/")
+    if ".nallputer/state/environment" in norm:
         env_info = {"spec_rev": sync.last_sync_rev or 0, "lock_rev": 0, "drift": None}
     return {"path": str(p), "bytes_written": new_bytes, "sync_state": {"sync_state": sync.sync_state, "last_sync_rev": sync.last_sync_rev, "last_sync_at": sync.last_sync_at, "dirty_count": sync.dirty_count, "dirty_files": sync.dirty_files, "last_error": sync.last_error}, "environment": env_info}
 

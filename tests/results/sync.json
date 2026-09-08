@@ -1,0 +1,24 @@
+{
+  "before": {
+    "sync_state": "pending",
+    "last_sync_rev": 0,
+    "last_sync_at": "2026-09-08T18:30:35Z",
+    "dirty_count": 4,
+    "dirty_files": [
+      "C:\\home\\nally\\workspace\\projects\\allowed.txt",
+      "C:\\home\\nally\\workspace\\.nallputer\\state\\environment.yaml",
+      "C:\\home\\nally\\workspace\\projects\\persist.txt",
+      "C:\\home\\nally\\workspace\\projects\\syncme.txt"
+    ],
+    "last_error": null
+  },
+  "after": {
+    "sync_state": "synced",
+    "last_sync_rev": 1,
+    "last_sync_at": "2026-09-08T18:30:39Z",
+    "dirty_count": 0,
+    "dirty_files": [],
+    "last_error": null
+  },
+  "ts": "2026-09-08T18:30:39Z"
+}

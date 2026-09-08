@@ -1,0 +1,14 @@
+{
+  "cold_ms": 13.39,
+  "health": {
+    "status": "ok",
+    "computer_id": "cmp_fe82181b",
+    "uptime_sec": 5,
+    "sync_state": "synced",
+    "last_sync_rev": 2,
+    "last_sync_at": "2026-09-08T18:30:39Z",
+    "last_error": null
+  },
+  "note": "Cold includes import+lifespan; Windows; real cold on Render includes container boot.",
+  "ts": "2026-09-08T18:30:39Z"
+}

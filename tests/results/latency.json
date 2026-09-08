@@ -1,0 +1,10 @@
+{
+  "measure": "exec_latency_ms",
+  "nallputer_ms": 304.67,
+  "baseline_subprocess_ms": 87.38,
+  "delta_ms": 217.3,
+  "overhead_x": 3.49,
+  "command": "echo latency-probe",
+  "note": "Windows TestClient baseline; Docker Linux will differ. Informational only.",
+  "ts": "2026-09-08T18:30:36Z"
+}

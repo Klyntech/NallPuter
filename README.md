@@ -32,7 +32,7 @@ NallPuter (computer)
 | 4 | Workspace + Runtime + Security + Lifecycle models | ✅ `docs/decisions/005` `006` `007` `008` |
 | 5 | NALLY integration — Computer Adapter | ✅ `docs/decisions/009-nally-integration.md` |
 | 6 | MVP v0.1 — disposable runtime + sync engine | ✅ `nallputer/` (FastAPI, cgroup v2, pgid, egress proxy, sync stub) |
-| 7 | Evaluation | ⬜ `tests/` |
+| 7 | Evaluation — minimal gate | ✅ 19/19 `tests/` (latency, startup, timeout/cancel, isolation/egress, persistence/sync, output) |
 | 8 | Production architecture | ⬜ |
 
 Execution sequence: `2a ─┐ → 3 → 4 → 5 → 6 → 7 → 8` and `2b ─┘` (both block 3). Render is Lab Rat #1; external store is canonical (004).
@@ -66,7 +66,11 @@ NallPuter/
 │   ├── Dockerfile               # tini + cgroup v2 + workspace
 │   ├── pyproject.toml
 │   └── nallputer/app,core,routers
-├── tests/                 # Phase 7 evaluation harness
+├── tests/                 # Phase 7 minimal harness (19/19 PASS, measure-only)
+│   ├── conftest.py              # TestClient + computer_id + exec_and_poll
+│   ├── test_latency.py, test_startup.py, test_lifecycle.py
+│   ├── test_isolation.py, test_persistence.py, test_output.py
+│   └── results/REPORT.md + *.json (measure-only, no threshold gate)
 ├── render.yaml            # Render private service (ephemeral) + token
 ├── .env.example
 └── README.md
@@ -113,9 +117,9 @@ All Phase 1 documents separate three evidence tiers:
 
 This makes architecture decisions traceable and defensible.
 
-## Next: Phase 7 — Evaluation
+## Next: Phase 7-full → Phase 8 Production
 
-Phase 6 MVP is built (`nallputer/` FastAPI disposable runtime under frozen `003-009` + `openapi.yaml`). Implements: `GET /v1/machine` + `GET /v1/health` + computer lifecycle (`create/list/get/start/stop/destroy/sync`, 501 `pause/resume/snapshot`) + exec (pgid, wall-time, 100KB cap, cancel, idempotency, egress `deny-by-default` + `HTTP_PROXY` injection) + files (jail, atomic, quota 507, `credential_in_spec` 403, base64) + sync stub (`pending` → `synced`) + `tini` + cgroup v2 probe (no v1 fallback). 33 contract checks pass locally. Next: Phase 7 evaluation harness (`tests/`) against `local subprocess` vs `NALLPUTER`.
+Phase 7 minimal is **MEASURED 19/19 PASS** (measure-only, no Docker). Results in `tests/results/REPORT.md`: latency `304ms` vs `87ms` baseline, warm `17ms`/cold `13ms`, `timed_out`/`cancelled` correct, jail/egress/credential `403` correct, `write→pending→synced` + `stop→start` persistence correct, empty/truncation/pagination correct (Windows informational). Fixes: egress default `pypi.org...`, Windows `taskkill` tree-kill, backslash-normalized `environment.yaml` hint, cross-platform empty-output. **Do not modify runtime now** — evidence drives Phase 8. Next full gate needs Docker Linux for true cgroup `v2`, `pids.current`, concurrency 5x, env replay, private-network latency.
 
 ## License
 

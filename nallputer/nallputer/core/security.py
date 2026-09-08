@@ -24,7 +24,8 @@ def egress_check(command: str) -> Optional[dict]:
     Real proxy (127.0.0.1:3128) will enforce for HTTP(S) at runtime; this is the API-layer gate.
     """
     policy = os.getenv("NALLPUTER_EGRESS_POLICY", "deny-by-default")
-    allowlist_raw = os.getenv("NALLPUTER_EGRESS_ALLOWLIST", "")
+    # default allowlist must match config.py + render.yaml (007)
+    allowlist_raw = os.getenv("NALLPUTER_EGRESS_ALLOWLIST", "pypi.org,registry.npmjs.org,github.com")
     allowlist = [s.strip().lower() for s in allowlist_raw.split(",") if s.strip()]
     if policy != "deny-by-default":
         return None  # allow all if not deny
