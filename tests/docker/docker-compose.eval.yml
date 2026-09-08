@@ -1,0 +1,22 @@
+services:
+  nallputer-eval:
+    build:
+      context: ../..
+      dockerfile: tests/docker/Dockerfile.eval
+    image: nallputer:eval
+    container_name: nallputer-eval
+    environment:
+      - NALLPUTER_TOKEN=dev-token
+      - NALLPUTER_PROVIDER=docker
+      - NALLPUTER_RUNTIME=nallputer-0.1.0
+      - NALLPUTER_EGRESS_POLICY=deny-by-default
+      - NALLPUTER_EGRESS_ALLOWLIST=pypi.org,registry.npmjs.org,github.com
+    volumes:
+      - ../results/linux:/app/tests/results/linux
+    # No ports needed — TestClient is in-process. Private networking not required for local eval.
+    # Keep container ephemeral; no restart, no persistent volume for eval.
+    restart: "no"
+    # Resource caps mirror Lab Rat defaults (002/006) — verify cgroup v2 enforcement inside
+    cpus: 0.5
+    mem_limit: 512m
+    pids_limit: 100

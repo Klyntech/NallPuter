@@ -1,0 +1,39 @@
+# Phase 7-full eval image — runs same 19 tests inside Linux/Docker
+# No changes to nallputer/; reuses Phase 6 MVP Dockerfile shape but adds pytest harness
+FROM python:3.12-slim-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends tini ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# cgroup v2 is host-provided; ensure we fail visibly if v1 is detected (006 probe)
+# Workspace inside eval image mirrors production layout but lives on ephemeral container FS
+RUN useradd -m -u 1000 nally && mkdir -p /home/nally/workspace/projects /home/nally/workspace/files /home/nally/workspace/artifacts /home/nally/workspace/tmp /home/nally/workspace/.cache /home/nally/workspace/.nallputer/state \
+ && chown -R nally:nally /home/nally
+
+# Install nallputer + test deps (same as nallputer/pyproject.toml [dev])
+WORKDIR /app
+COPY nallputer/pyproject.toml ./nallputer/pyproject.toml
+COPY nallputer/nallputer ./nallputer/nallputer
+COPY nallputer/README.md ./nallputer/README.md
+COPY tests ./tests
+COPY docs ./docs
+COPY .env.example .env.example
+
+RUN pip install --no-cache-dir -e ./nallputer 2>&1 | tail -n 5
+RUN pip install --no-cache-dir pytest httpx fastapi pydantic pydantic-settings python-multipart --quiet
+
+ENV HOME=/home/nally \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_INPUT=1 \
+    NALLPUTER_TOKEN=dev-token \
+    NALLPUTER_PROVIDER=docker \
+    NALLPUTER_RUNTIME=nallputer-0.1.0 \
+    NALLPUTER_WORKSPACE=/home/nally/workspace \
+    NALLPUTER_EGRESS_POLICY=deny-by-default \
+    NALLPUTER_EGRESS_ALLOWLIST=pypi.org,registry.npmjs.org,github.com \
+    PYTHONPATH=/app/nallputer
+
+USER nally
+ENTRYPOINT ["/usr/bin/tini", "--"]
+# Default: run 19 tests + collect evidence table
+CMD ["sh", "-c", "mkdir -p tests/results/linux && pytest tests -v --junitxml=tests/results/linux/junit.xml -k 'not test_startup_cold' 2>&1 | tee tests/results/linux/pytest.log && python tests/docker/collect.py"]
