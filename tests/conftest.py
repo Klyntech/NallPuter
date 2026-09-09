@@ -96,26 +96,57 @@ def write_result(name: str, payload: dict):
     # No — keep Windows baseline untouched when in Docker
 
 
-# 8B isolation: each test gets clean persistence + sync state (prevents S3 moto bucket leakage)
+# 8B/8C isolation: each test gets clean persistence + sync state + computer state + workspace env (prevents leakage)
 @pytest.fixture(autouse=True)
 def _isolate_8b():
-    # Before each test, ensure clean state from previous test's S3 mock or degraded sync
+    # Before each test, ensure clean state from previous test's S3 mock, degraded sync, or yanked env
     try:
         from nallputer.core.persistence.factory import reset_persistence
         from nallputer.core import sync_engine
+        from nallputer.core.lifecycle import computers
 
         reset_persistence()
         sync_engine.reset_for_tests()
+        # Reset Computer sync_states (per-computer) that may be degraded from previous bad env test
+        for c in list(computers.values()):
+            try:
+                c.sync_state.sync_state = "synced"
+                c.sync_state.last_error = None
+                # Also ensure state is not recovering unless test expects it
+                if c.state == "recovering":
+                    c.state = "running"
+            except Exception:
+                pass
+        # Ensure global workspace env is valid (not yanked) — previous integration test may have left yanked
+        for p in [Path("/home/nally/workspace/.nallputer/state/environment.yaml"), Path(os.getenv("NALLPUTER_WORKSPACE", "/home/nally/workspace")) / ".nallputer/state/environment.yaml"]:
+            try:
+                if p.exists() and "yanked" in p.read_text(encoding="utf-8", errors="ignore").lower():
+                    p.write_text("version: 1\npython:\n  packages: [\"requests==2.32.0\"]\n", encoding="utf-8")
+                    # Also remove lock if yanked
+                    lp = p.parent / "environment.lock"
+                    if lp.exists() and "yanked" in lp.read_text(encoding="utf-8", errors="ignore").lower():
+                        lp.unlink()
+            except Exception:
+                pass
     except Exception:
         pass
     yield
     try:
         from nallputer.core.persistence.factory import reset_persistence
         from nallputer.core import sync_engine
+        from nallputer.core.lifecycle import computers
 
         reset_persistence()
         sync_engine.reset_for_tests()
-        # Also clear env that tests may have set for S3 mock
+        for c in list(computers.values()):
+            try:
+                if c.sync_state.sync_state in ("degraded", "env_replay_failed"):
+                    c.sync_state.sync_state = "synced"
+                    c.sync_state.last_error = None
+                if c.state == "recovering":
+                    c.state = "running"
+            except Exception:
+                pass
         for k in list(os.environ.keys()):
             if k.startswith("NALLPUTER_S3_"):
                 if k == "NALLPUTER_S3_BUCKET" and os.getenv(k) == "test-bucket-8a":
@@ -125,5 +156,15 @@ def _isolate_8b():
         from nallputer.core.persistence.factory import reset_persistence as _rp
 
         _rp()
+        # Clean global workspace again after test
+        for p in [Path("/home/nally/workspace/.nallputer/state/environment.yaml"), Path(os.getenv("NALLPUTER_WORKSPACE", "/home/nally/workspace")) / ".nallputer/state/environment.yaml"]:
+            try:
+                if p.exists() and "yanked" in p.read_text(encoding="utf-8", errors="ignore").lower():
+                    p.write_text("version: 1\npython:\n  packages: [\"requests==2.32.0\"]\n", encoding="utf-8")
+                    lp = p.parent / "environment.lock"
+                    if lp.exists() and "yanked" in lp.read_text(encoding="utf-8", errors="ignore").lower():
+                        lp.unlink()
+            except Exception:
+                pass
     except Exception:
         pass
