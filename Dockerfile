@@ -8,11 +8,11 @@ RUN useradd -m -u 1000 nally && mkdir -p /home/nally/workspace/projects /home/na
 
 WORKDIR /home/nally/workspace/projects
 
-COPY nallputer/pyproject.toml /tmp/pyproject.toml
+COPY nallputer/pyproject.toml /app/pyproject.toml
 COPY nallputer/nallputer /app/nallputer
-COPY nallputer/README.md /tmp/README.md
+COPY nallputer/README.md /app/README.md
 
-RUN pip install --no-cache-dir -e /tmp --no-deps 2>&1 | head -n 20; pip install --no-cache-dir fastapi "uvicorn[standard]" pydantic pydantic-settings python-multipart 2>&1 | tail -n 5
+RUN pip install --no-cache-dir /app 2>&1 | tail -n 10
 
 USER nally
 ENV HOME=/home/nally \
