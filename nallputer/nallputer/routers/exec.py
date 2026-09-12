@@ -114,6 +114,13 @@ def create_exec(body: ExecCreate, authorization: str | None = Header(default=Non
 
     r = create_run(body.computer_id, body.command, cwd_resolved, body.timeout_sec, body.env, idempotency_key)
     audit({"computer_id": body.computer_id, "run_id": r.run_id, "decision":"allow","command": body.command[:200]})
+    # 8E: mark activity for auto-stop (011 row 3, 900s default)
+    try:
+        from nallputer.core.lifecycle import touch_activity
+
+        touch_activity(body.computer_id)
+    except Exception:
+        pass
     # 8B: sync_pending reflects per-computer dirty count (exec may have mutated workspace via FS watcher or explicit writes)
     sync = get_sync(body.computer_id)
     r.sync_pending = sync.dirty_count > 0

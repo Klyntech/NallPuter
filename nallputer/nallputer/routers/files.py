@@ -168,8 +168,14 @@ def file_write(body: FileWriteRequest, authorization: str | None = Header(defaul
         raise HTTPException(status_code=403, detail={"code":"filesystem_denied","message":str(e)})
     except Exception as e:
         raise HTTPException(status_code=500, detail={"code":"write_failed","message":str(e)})
-    # sync dirty tracking: only if persistent path (8B per-computer)
+    # 8E: touch activity for auto-stop (900s) and sync dirty tracking (8B per-computer)
     from nallputer.core.workspace import is_ephemeral
+    try:
+        from nallputer.core.lifecycle import touch_activity
+
+        touch_activity(body.computer_id)
+    except Exception:
+        pass
     if not is_ephemeral(p):
         mark_dirty(str(p), cid=body.computer_id)
     sync = get_sync(body.computer_id)

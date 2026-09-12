@@ -79,6 +79,13 @@ def create_computer(body: CreateComputerBody | None = None, _auth=Depends(requir
     sync = SyncState(sync_state="synced", last_sync_rev=0, last_sync_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
     c = Computer(computer_id=cid, state="running", machine=profile, sync_state=sync)
     computers[cid] = c
+    # 8E: mark activity for auto-stop
+    try:
+        from nallputer.core.lifecycle import touch_activity
+
+        touch_activity(cid)
+    except Exception:
+        pass
     from fastapi.responses import JSONResponse
     return JSONResponse(status_code=201, content={"computer_id": cid, "machine": profile})
 

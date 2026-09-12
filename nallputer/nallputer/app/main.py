@@ -60,7 +60,22 @@ async def lifespan(app: FastAPI):
             start_proxy()
     except Exception as e:
         print(f"[egress_proxy] start failed: {e}", flush=True)
+    # 8E: start auto-stop (900s default, configurable) — 011 row 3
+    try:
+        from nallputer.core.lifecycle import start_auto_stop, touch_activity
+
+        start_auto_stop()
+        touch_activity(default_computer_id)
+    except Exception as e:
+        print(f"[auto_stop] start failed: {e}", flush=True)
     yield
+    # 8E: stop auto-stop
+    try:
+        from nallputer.core.lifecycle import stop_auto_stop
+
+        stop_auto_stop()
+    except Exception:
+        pass
     # 8D: stop proxy
     try:
         from nallputer.core.egress_proxy import stop_proxy

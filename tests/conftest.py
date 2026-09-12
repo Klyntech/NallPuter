@@ -117,6 +117,20 @@ def _isolate_8b():
                     c.state = "running"
             except Exception:
                 pass
+        # 8E: lifecycle cleanup — clear _last_activity and idle_since, reset idle/stopped->running
+        try:
+            from nallputer.core.lifecycle import _last_activity
+
+            _last_activity.clear()
+            for c in list(computers.values()):
+                try:
+                    c.idle_since = None
+                    if c.state in ("idle", "stopped"):
+                        c.state = "running"
+                except Exception:
+                    pass
+        except Exception:
+            pass
         # Ensure global workspace env is valid (not yanked) — previous integration test may have left yanked
         for p in [Path("/home/nally/workspace/.nallputer/state/environment.yaml"), Path(os.getenv("NALLPUTER_WORKSPACE", "/home/nally/workspace")) / ".nallputer/state/environment.yaml"]:
             try:
@@ -147,6 +161,20 @@ def _isolate_8b():
                     c.state = "running"
             except Exception:
                 pass
+        # 8E: lifecycle cleanup — clear _last_activity and idle_since, reset idle/stopped->running
+        try:
+            from nallputer.core.lifecycle import _last_activity
+
+            _last_activity.clear()
+            for c in list(computers.values()):
+                try:
+                    c.idle_since = None
+                    if c.state in ("idle", "stopped"):
+                        c.state = "running"
+                except Exception:
+                    pass
+        except Exception:
+            pass
         for k in list(os.environ.keys()):
             if k.startswith("NALLPUTER_S3_"):
                 if k == "NALLPUTER_S3_BUCKET" and os.getenv(k) == "test-bucket-8a":
