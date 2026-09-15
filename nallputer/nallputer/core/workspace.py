@@ -57,6 +57,7 @@ def resolve_jail(requested: str) -> Path:
         candidate = WORKSPACE_ROOT / rel
     elif req.startswith("/"):
         # any other absolute path is outside workspace -> deny
+        print(f"[workspace] DENY: {requested!r} resolved to {req!r} — absolute path outside workspace prefix {workspace_prefix!r}", flush=True)
         raise PermissionError(f"filesystem_denied: {requested!r} outside workspace")
     else:
         # relative path
@@ -73,6 +74,7 @@ def resolve_jail(requested: str) -> Path:
     try:
         resolved.relative_to(root_resolved)
     except ValueError:
+        print(f"[workspace] DENY (traversal): {requested!r} resolved to {resolved!r} escapes root {root_resolved!r}", flush=True)
         raise PermissionError(f"filesystem_denied: {requested!r} outside workspace (traversal)")
     return resolved
 

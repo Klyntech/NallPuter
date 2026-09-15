@@ -56,10 +56,13 @@ def file_read(body: FileReadRequest, authorization: str | None = Header(default=
     try:
         p = resolve_jail(body.path)
     except PermissionError as e:
+        audit({"computer_id": body.computer_id, "path": body.path, "decision": "deny", "reason": "filesystem_denied", "detail": str(e)})
         raise HTTPException(status_code=403, detail={"code":"filesystem_denied","message":str(e)})
     if not p.exists():
+        audit({"computer_id": body.computer_id, "path": body.path, "resolved": str(p), "decision": "deny", "reason": "not_found"})
         raise HTTPException(status_code=404, detail={"code":"not_found","message":"file not found"})
     if p.is_dir():
+        audit({"computer_id": body.computer_id, "path": body.path, "resolved": str(p), "decision": "deny", "reason": "is_directory"})
         raise HTTPException(status_code=400, detail={"code":"is_directory","message":"path is directory"})
     # read bounded
     limit = body.limit or 100000
@@ -98,6 +101,7 @@ def file_write(body: FileWriteRequest, authorization: str | None = Header(defaul
     try:
         p = resolve_jail(body.path)
     except PermissionError as e:
+        audit({"computer_id": body.computer_id, "path": body.path, "decision": "deny", "reason": "filesystem_denied", "detail": str(e)})
         raise HTTPException(status_code=403, detail={"code":"filesystem_denied","message":str(e)})
     # quota check 005: would write exceed workspace_gb?
     profile = machine_profile()
@@ -195,10 +199,13 @@ def file_list(body: FileListRequest, authorization: str | None = Header(default=
     try:
         p = resolve_jail(body.path)
     except PermissionError as e:
+        audit({"computer_id": body.computer_id, "path": body.path, "decision": "deny", "reason": "filesystem_denied", "detail": str(e)})
         raise HTTPException(status_code=403, detail={"code":"filesystem_denied","message":str(e)})
     if not p.exists():
+        audit({"computer_id": body.computer_id, "path": body.path, "resolved": str(p), "decision": "deny", "reason": "not_found"})
         raise HTTPException(status_code=404, detail={"code":"not_found","message":"path not found"})
     if not p.is_dir():
+        audit({"computer_id": body.computer_id, "path": body.path, "resolved": str(p), "decision": "deny", "reason": "not_directory"})
         raise HTTPException(status_code=400, detail={"code":"not_directory","message":"path is not directory"})
     limit = body.limit or 100
     if limit > 1000:
@@ -223,4 +230,5 @@ def file_list(body: FileListRequest, authorization: str | None = Header(default=
         except OSError:
             entries.append({"name": child.name, "path": str(child), "type": "file", "size": None, "mtime": None})
     next_cursor = str(start+limit) if truncated else None
+    audit({"computer_id": body.computer_id, "path": body.path, "resolved": str(p), "decision": "allow", "entries": len(entries)})
     return {"path": str(p), "entries": entries, "truncated": truncated, "next_cursor": next_cursor}
